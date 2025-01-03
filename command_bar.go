@@ -80,7 +80,7 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	return m, func() tea.Msg { return msg }
+	return m, nil
 }
 
 func (m CommandBarModel) View() string {

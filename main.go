@@ -10,6 +10,7 @@ import (
 )
 
 type model struct {
+	size          tea.WindowSizeMsg
 	logs          io.Writer
 	current_route string
 	views         map[string]tea.Model
@@ -39,20 +40,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		for _, view := range m.views {
-			view, _ = view.Update(msg)
-			m.views[m.current_route] = view
-		}
+		m.size = msg
 		return m, nil
 	}
 
 	command_bar_model, command_bar_message := m.commannd_bar.Update(msg)
-	view_model, message := m.views[m.current_route].Update(msg)
-
 	m.commannd_bar = command_bar_model.(CommandBarModel)
+	if command_bar_message != nil {
+		return m, command_bar_message
+	}
+
+	// if we're in command mode, we can't have views receive any input
+	if m.commannd_bar.GetState() == CommandBarStateCommand {
+		return m, nil
+	}
+
+	view_model, view_message := m.views[m.current_route].Update(msg)
 	m.views[m.current_route] = view_model
 
-	return m, tea.Batch(command_bar_message, message)
+	return m, view_message
 }
 
 func (m model) View() string {

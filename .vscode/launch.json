@@ -6,7 +6,7 @@
         "type": "go",
         "request": "launch",
         "mode": "debug",
-        "program": "${workspaceRoot}/cmd/godiff/main.go"
+        "program": "${workspaceRoot}/"
       },
         {
             "name": "Attach to Sunbeam",
