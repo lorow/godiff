@@ -46,6 +46,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	command_bar_model, command_bar_message := m.commannd_bar.Update(msg)
 	m.commannd_bar = command_bar_model.(CommandBarModel)
+	// if the command bar returned anything
+	// it means it reacted to the current message
+	// so we need to return it and react to it in the next update
 	if command_bar_message != nil {
 		return m, command_bar_message
 	}
@@ -81,6 +84,19 @@ func main() {
 		if err != nil {
 			os.Exit(1)
 		}
+	}
+
+	var err error
+	err = InitiDatabase()
+	if err != nil {
+		fmt.Printf("Something went wrong while trying to open the database: %v \n", err)
+		os.Exit(1)
+	}
+
+	err = MigrateDatabase()
+	if err != nil {
+		fmt.Printf("Something went wrong while trying to migrate the database: %v \n", err)
+		os.Exit(1)
 	}
 
 	p := tea.NewProgram(newInitialModel(dump))
