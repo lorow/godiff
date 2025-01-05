@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
+	"godiff/components"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -29,13 +30,14 @@ func (s CommandBarState) String() string {
 type CommandBarModel struct {
 	// state has dual purpose
 	// for one, it'll indicate what's the state of the editor
-	// and on which line are we
+	// and on which line are we,
 	// but also it'll indicate if the command bar is selected
-	// if we're in CommandBarStateCommand state, we're selected
+	// if we're in CommandBarStateCommand state, we're selected,
 	// and we're hogging all the input
 	// until we are either put out of that state
 	// or the command is submitted
 	state      CommandBarState
+	textInput  components.TextInputModel
 	width      int
 	height     int
 	editorLine [2]int
@@ -44,6 +46,7 @@ type CommandBarModel struct {
 func NewCommandBar() CommandBarModel {
 	return CommandBarModel{
 		state:      CommandBarStateNormal,
+		textInput:  components.NewTextInput(),
 		editorLine: [2]int{0, 0},
 	}
 }
@@ -72,6 +75,7 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case ":":
 			if m.state == CommandBarStateNormal {
 				m.SetState(CommandBarStateCommand)
+				m.textInput.Focus()
 				return m, nil
 			}
 		case "v":
@@ -82,7 +86,15 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			if m.state != CommandBarStateNormal {
 				m.SetState(CommandBarStateNormal)
+				m.textInput.Blur()
+				m.textInput.Reset()
 				return m, nil
+			}
+		default:
+			if m.state == CommandBarStateCommand {
+				textInputModel, cmd := m.textInput.Update(msg)
+				m.textInput = textInputModel
+				return m, cmd
 			}
 		}
 	}
@@ -92,6 +104,9 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m CommandBarModel) View() string {
 	statusBarStyle := lipgloss.NewStyle().Width(m.width).Height(m.height).Background(lipgloss.Color("240"))
+	if m.state == CommandBarStateCommand {
+		return statusBarStyle.Render(m.textInput.View())
+	}
 
 	return statusBarStyle.Render(fmt.Sprintf("commandBar state: %s, width: %d", m.state, m.width))
 }
