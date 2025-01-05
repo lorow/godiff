@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/lipgloss"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -58,6 +59,10 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case SetNewSizeMsg:
+		m.width = msg.width
+		m.height = msg.height
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
@@ -86,7 +91,9 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m CommandBarModel) View() string {
-	return fmt.Sprintf("commandBar state: %s", m.state)
+	statusBarStyle := lipgloss.NewStyle().Height(m.height).Width(m.width).Background(lipgloss.Color("240"))
+
+	return statusBarStyle.Render(fmt.Sprintf("commandBar state: %s, width: %d", m.state, m.width))
 }
 
 func (m *CommandBarModel) SetState(state CommandBarState) {

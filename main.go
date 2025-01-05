@@ -9,8 +9,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
+type SetNewSizeMsg struct {
+	width, height int
+}
+
 type model struct {
-	size         tea.WindowSizeMsg
 	logs         io.Writer
 	currentRoute string
 	views        map[string]tea.Model
@@ -40,7 +43,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.size = msg
+		// technically we should be sending two different messages here
+		// one for the views and one for the commandbar
+		// but that'd mean we'd have to update **every** view
+		// each time we get a message.
+		// so this should be fine
+		for key, view := range m.views {
+			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
+			m.views[key] = viewModel
+		}
+		commandBarModel, _ := m.commandBar.Update(SetNewSizeMsg{width: msg.Width, height: 1})
+		m.commandBar = commandBarModel.(CommandBarModel)
 		return m, nil
 	}
 

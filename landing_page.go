@@ -30,6 +30,10 @@ func (m LandingPageModel) Init() tea.Cmd {
 func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
+	case SetNewSizeMsg:
+		m.width = msg.width
+		m.height = msg.height
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up":
