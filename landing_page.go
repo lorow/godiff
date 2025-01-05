@@ -59,7 +59,9 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m LandingPageModel) View() string {
+	windowContainer := lipgloss.NewStyle().Width(m.width).Height(m.height)
 	doc := strings.Builder{}
+
 	desc := lipgloss.JoinVertical(lipgloss.Left,
 		descStyle.Render("Style Definitions for Nice Terminal Layouts"),
 		infoStyle.Render("From Charm"+divider+url("https://github.com/charmbracelet/lipgloss")),
@@ -87,6 +89,6 @@ func (m LandingPageModel) View() string {
 	}
 
 	doc.WriteString(s + "\n\n")
-
-	return doc.String()
+	doc.WriteString(fmt.Sprintf("height: %d \n", m.height))
+	return windowContainer.Render(doc.String())
 }

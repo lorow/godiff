@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/charmbracelet/lipgloss"
 	"io"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
@@ -14,6 +16,7 @@ type SetNewSizeMsg struct {
 }
 
 type model struct {
+	size         tea.WindowSizeMsg
 	logs         io.Writer
 	currentRoute string
 	views        map[string]tea.Model
@@ -48,6 +51,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// but that'd mean we'd have to update **every** view
 		// each time we get a message.
 		// so this should be fine
+		m.size = msg
 		for key, view := range m.views {
 			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
 			m.views[key] = viewModel
@@ -78,14 +82,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := ""
+	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height)
+	doc := strings.Builder{}
 
 	if currentView, ok := m.views[m.currentRoute]; ok {
-		s += currentView.View()
+		doc.WriteString(currentView.View())
 	}
-	s += m.commandBar.View()
+	doc.WriteString(m.commandBar.View())
 
-	return s
+	return appDocument.Render(doc.String())
 }
 
 func main() {

@@ -91,7 +91,7 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m CommandBarModel) View() string {
-	statusBarStyle := lipgloss.NewStyle().Height(m.height).Width(m.width).Background(lipgloss.Color("240"))
+	statusBarStyle := lipgloss.NewStyle().Width(m.width).Height(m.height).Background(lipgloss.Color("240"))
 
 	return statusBarStyle.Render(fmt.Sprintf("commandBar state: %s, width: %d", m.state, m.width))
 }
