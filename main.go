@@ -10,11 +10,11 @@ import (
 )
 
 type model struct {
-	size          tea.WindowSizeMsg
-	logs          io.Writer
-	current_route string
-	views         map[string]tea.Model
-	commannd_bar  CommandBarModel
+	size         tea.WindowSizeMsg
+	logs         io.Writer
+	currentRoute string
+	views        map[string]tea.Model
+	commandBar   CommandBarModel
 }
 
 func newInitialModel(logs_file io.Writer) model {
@@ -22,10 +22,10 @@ func newInitialModel(logs_file io.Writer) model {
 	views["/"] = NewLandingPage()
 
 	return model{
-		logs:          logs_file,
-		current_route: "/",
-		views:         views,
-		commannd_bar:  NewCommandBar(),
+		logs:         logs_file,
+		currentRoute: "/",
+		views:        views,
+		commandBar:   NewCommandBar(),
 	}
 }
 
@@ -44,33 +44,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
-	command_bar_model, command_bar_message := m.commannd_bar.Update(msg)
-	m.commannd_bar = command_bar_model.(CommandBarModel)
+	commandBarModel, commandBarMessage := m.commandBar.Update(msg)
+	m.commandBar = commandBarModel.(CommandBarModel)
 	// if the command bar returned anything
 	// it means it reacted to the current message
 	// so we need to return it and react to it in the next update
-	if command_bar_message != nil {
-		return m, command_bar_message
+	if commandBarMessage != nil {
+		return m, commandBarMessage
 	}
 
 	// if we're in command mode, we can't have views receive any input
-	if m.commannd_bar.GetState() == CommandBarStateCommand {
+	if m.commandBar.GetState() == CommandBarStateCommand {
 		return m, nil
 	}
 
-	view_model, view_message := m.views[m.current_route].Update(msg)
-	m.views[m.current_route] = view_model
+	viewModel, viewMessage := m.views[m.currentRoute].Update(msg)
+	m.views[m.currentRoute] = viewModel
 
-	return m, view_message
+	return m, viewMessage
 }
 
 func (m model) View() string {
 	s := ""
 
-	if current_view, ok := m.views[m.current_route]; ok {
-		s += current_view.View()
+	if currentView, ok := m.views[m.currentRoute]; ok {
+		s += currentView.View()
 	}
-	s += m.commannd_bar.View()
+	s += m.commandBar.View()
 
 	return s
 }
@@ -78,7 +78,7 @@ func (m model) View() string {
 func main() {
 	var dump *os.File
 
-	if _, ok := os.LookupEnv("GODIFF_DEBUG"); ok {
+	if _, ok := os.LookupEnv("GODIFF_DEBUG"); !ok {
 		var err error
 		dump, err = os.OpenFile("messages.log", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 		if err != nil {
@@ -99,7 +99,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	p := tea.NewProgram(newInitialModel(dump))
+	p := tea.NewProgram(newInitialModel(dump), tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Something went wrong while trying to run the program: %v \n", err)
 		os.Exit(1)

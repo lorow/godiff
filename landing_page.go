@@ -9,6 +9,8 @@ import (
 )
 
 type LandingPageModel struct {
+	width    int
+	height   int
 	choices  []string
 	cursor   int
 	selected map[int]struct{}

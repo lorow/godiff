@@ -6,22 +6,22 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type CommardBarState int
+type CommandBarState int
 
 const (
-	CommardBarStateNormal  CommardBarState = iota
+	CommandBarStateNormal  CommandBarState = iota
 	CommandBarStateCommand                 // special state where we're getting a command input
-	CommardBarStateEdit
-	CommardBarStateVisual
+	CommandBarStateEdit
+	CommandBarStateVisual
 )
 
-var CommandBarStateName = map[CommardBarState]string{
-	CommardBarStateNormal: "Normal",
-	CommardBarStateEdit:   "Edit",
-	CommardBarStateVisual: "Visual",
+var CommandBarStateName = map[CommandBarState]string{
+	CommandBarStateNormal: "Normal",
+	CommandBarStateEdit:   "Edit",
+	CommandBarStateVisual: "Visual",
 }
 
-func (s CommardBarState) String() string {
+func (s CommandBarState) String() string {
 	return CommandBarStateName[s]
 }
 
@@ -34,14 +34,16 @@ type CommandBarModel struct {
 	// and we're hogging all the input
 	// until we are either put out of that state
 	// or the command is submitted
-	state       CommardBarState
-	editor_line [2]int
+	state      CommandBarState
+	width      int
+	height     int
+	editorLine [2]int
 }
 
 func NewCommandBar() CommandBarModel {
 	return CommandBarModel{
-		state:       CommardBarStateNormal,
-		editor_line: [2]int{0, 0},
+		state:      CommandBarStateNormal,
+		editorLine: [2]int{0, 0},
 	}
 }
 
@@ -59,22 +61,22 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q":
-			if m.state == CommardBarStateNormal {
+			if m.state == CommandBarStateNormal {
 				return m, tea.Quit
 			}
 		case ":":
-			if m.state == CommardBarStateNormal {
+			if m.state == CommandBarStateNormal {
 				m.SetState(CommandBarStateCommand)
 				return m, nil
 			}
 		case "v":
-			if m.state == CommardBarStateNormal {
-				m.SetState(CommardBarStateVisual)
+			if m.state == CommandBarStateNormal {
+				m.SetState(CommandBarStateVisual)
 				return m, nil
 			}
 		case "esc":
-			if m.state != CommardBarStateNormal {
-				m.SetState(CommardBarStateNormal)
+			if m.state != CommandBarStateNormal {
+				m.SetState(CommandBarStateNormal)
 				return m, nil
 			}
 		}
@@ -87,10 +89,10 @@ func (m CommandBarModel) View() string {
 	return fmt.Sprintf("commandBar state: %s", m.state)
 }
 
-func (m *CommandBarModel) SetState(state CommardBarState) {
+func (m *CommandBarModel) SetState(state CommandBarState) {
 	m.state = state
 }
 
-func (m CommandBarModel) GetState() CommardBarState {
+func (m CommandBarModel) GetState() CommandBarState {
 	return m.state
 }
