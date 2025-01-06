@@ -36,7 +36,14 @@ func newInitialModel(logs_file io.Writer) model {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	var cmds []tea.Cmd
+	cmds = append(cmds, m.commandBar.Init())
+
+	for _, view := range m.views {
+		cmds = append(cmds, view.Init())
+	}
+
+	return tea.Batch(cmds...)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {

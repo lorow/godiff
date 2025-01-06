@@ -1,6 +1,9 @@
 package components
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"strings"
+)
 
 // I know I should have used bubbles text input component here
 // I just wanted to see how I'd write my own, so I did
@@ -13,6 +16,7 @@ type TextInputModel struct {
 	focused        bool
 	prompt         string
 	inputText      []rune
+	cursor         CursorModel
 	cursorPosition CursorPosition
 	width          int
 }
@@ -21,6 +25,7 @@ func NewTextInput() TextInputModel {
 	return TextInputModel{
 		focused:        false,
 		prompt:         ">",
+		cursor:         NewCursorModel(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 0},
 		width:          0,
@@ -29,6 +34,15 @@ func NewTextInput() TextInputModel {
 
 func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
 	// todo add keymaps
+
+	// check if we should initialize blinking
+	if initMsg, ok := msg.(InitCursorBlinkMsg); ok {
+		var cmd tea.Cmd
+		m.cursor.Focus()
+		m.cursor, cmd = m.cursor.Update(initMsg)
+		m.cursor.Blur()
+		return m, cmd
+	}
 
 	if !m.focused {
 		return m, nil
@@ -39,7 +53,6 @@ func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
 		switch msg.Type {
 		case tea.KeyBackspace:
 			m.DeleteCharBackwards()
-			return m, nil
 		case tea.KeyLeft:
 			if m.cursorPosition.X > 0 {
 				m.cursorPosition.X--
@@ -52,15 +65,44 @@ func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
 			m.insertRuneFromUserInput(msg.Runes)
 		default:
 			m.insertRuneFromUserInput(msg.Runes)
-			return m, nil
 		}
 	}
 
-	return m, nil
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
+
+	m.cursor, cmd = m.cursor.Update(msg)
+	cmds = append(cmds, cmd)
+
+	if m.cursor.Mode() == CursorBlink {
+		cmds = append(cmds, m.cursor.BlinkCmd())
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m TextInputModel) View() string {
-	return m.prompt + " " + string(m.inputText)
+	v := strings.Builder{}
+	posOffset := max(0, m.cursorPosition.X-1)
+
+	if len(m.inputText) > 0 {
+		// the character that will act as the display for our cursor
+		char := string(m.inputText[posOffset])
+		m.cursor.SetChar(char)
+	} else {
+		m.cursor.SetChar("")
+	}
+
+	v.WriteString(m.prompt)
+	v.WriteString(" ")
+	v.WriteString(string(m.inputText[:posOffset]))
+	v.WriteString(m.cursor.View())
+
+	if len(m.inputText) > 0 {
+		v.WriteString(string(m.inputText[posOffset+1:]))
+	}
+
+	return v.String()
 }
 
 func (m *TextInputModel) DeleteCharBackwards() {
@@ -96,6 +138,7 @@ func (m *TextInputModel) Reset() {
 }
 
 func (m *TextInputModel) Focus() {
+	m.cursor.Focus()
 	m.focused = true
 }
 
@@ -104,5 +147,10 @@ func (m TextInputModel) Focused() bool {
 }
 
 func (m *TextInputModel) Blur() {
+	m.cursor.Blur()
 	m.focused = false
+}
+
+func TextInputBlink() tea.Msg {
+	return BlinkCursor()
 }

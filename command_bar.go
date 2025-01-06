@@ -52,7 +52,7 @@ func NewCommandBar() CommandBarModel {
 }
 
 func (m CommandBarModel) Init() tea.Cmd {
-	return nil
+	return components.TextInputBlink
 }
 
 func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -62,12 +62,18 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch msg := msg.(type) {
+	case components.InitCursorBlinkMsg, components.CursorBlinkMsg:
+		textInputModel, cmd := m.textInput.Update(msg)
+		m.textInput = textInputModel
+		return m, cmd
 	case SetNewSizeMsg:
 		m.width = msg.width
 		m.height = msg.height
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
+		// todo move this to commands
+		// also figure out how to pass captured input down
 		case "q":
 			if m.state == CommandBarStateNormal {
 				return m, tea.Quit
