@@ -71,9 +71,21 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.height
 		return m, nil
 	case tea.KeyMsg:
+
+		if m.state == CommandBarStateCommand {
+			if msg.String() == "esc" {
+				m.SetState(CommandBarStateNormal)
+				m.textInput.Blur()
+				m.textInput.Reset()
+				return m, nil
+			}
+			textInputModel, cmd := m.textInput.Update(msg)
+			m.textInput = textInputModel
+			return m, cmd
+		}
+
 		switch msg.String() {
 		// todo move this to commands
-		// also figure out how to pass captured input down
 		case "q":
 			if m.state == CommandBarStateNormal {
 				return m, tea.Quit
@@ -88,19 +100,6 @@ func (m CommandBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == CommandBarStateNormal {
 				m.SetState(CommandBarStateVisual)
 				return m, nil
-			}
-		case "esc":
-			if m.state != CommandBarStateNormal {
-				m.SetState(CommandBarStateNormal)
-				m.textInput.Blur()
-				m.textInput.Reset()
-				return m, nil
-			}
-		default:
-			if m.state == CommandBarStateCommand {
-				textInputModel, cmd := m.textInput.Update(msg)
-				m.textInput = textInputModel
-				return m, cmd
 			}
 		}
 	}
