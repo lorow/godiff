@@ -16,18 +16,14 @@ type LandingPageModel struct {
 	loadingProjects   bool
 	projects          []Project
 	cursor            int
-	// generally, this will be removed
-	// instead, we will be sending a RouteToEditor
-	// command with the selected project id
-	// which we will then load up and display
-	selected map[int]struct{}
+	selected          int
 }
 
 type SelectedProject int
 
 func NewLandingPage() LandingPageModel {
 	return LandingPageModel{
-		selected: make(map[int]struct{}),
+		selected: -1,
 	}
 }
 
@@ -38,7 +34,6 @@ func (m LandingPageModel) Init() tea.Cmd {
 func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// we need to first handle the incoming messages
 	// only then we can send our own IO commands
-
 	switch msg := msg.(type) {
 	case SetNewSizeMsg:
 		m.width = msg.width
@@ -61,14 +56,8 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, nil
 		case "enter":
-			//return m, RouteTo("editor", SelectedProject(m.projects[m.cursor].id))
-
-			if _, ok := m.selected[m.cursor]; ok {
-				delete(m.selected, m.cursor)
-			} else {
-				m.selected[m.cursor] = struct{}{}
-			}
-			return m, nil
+			m.selected = m.cursor
+			return m, RouteTo("editor", SelectedProject(m.projects[m.cursor].id))
 		}
 	}
 
@@ -96,15 +85,13 @@ func (m LandingPageModel) View() string {
 
 	for i, choice := range m.projects {
 		cursor := " "
-
 		if i == m.cursor {
 			cursor = ">"
 		}
-
 		checked := " "
 
-		if _, ok := m.selected[i]; ok {
-			checked = "x"
+		if i == m.selected {
+			checked = "█"
 		}
 
 		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice.name)

@@ -1,15 +1,34 @@
 package main
 
+import "log"
+
+const getProjectsQuery = "SELECT * FROM Project ORDER BY id LIMIT ? OFFSET ?"
+
 func GetProjects(limit, offset int) []Project {
-	projects := []Project{
-		{
-			id:   1,
-			name: "Project 1",
-		},
-		{
-			id:   2,
-			name: "Project 2",
-		},
+	db := GetDBConnection()
+	projects := []Project{}
+
+	stmt, err := db.Prepare(getProjectsQuery)
+	if err != nil {
+		log.Fatal("Preparing projects statement failed", err)
 	}
+
+	rows, err := stmt.Query(limit, offset)
+	if err != nil {
+		log.Fatal("Querying projects statement failed", err)
+	}
+
+	for rows.Next() {
+		var (
+			id   int
+			name string
+		)
+		if err := rows.Scan(&id, &name); err != nil {
+			log.Fatal("Row is missing fields", err)
+		}
+
+		projects = append(projects, NewProject(id, name))
+	}
+
 	return projects
 }

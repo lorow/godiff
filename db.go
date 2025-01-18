@@ -9,7 +9,7 @@ import (
 
 var db *sql.DB
 
-func InitiDatabase() error {
+func InitDatabase() error {
 	var err error
 	db, err = sql.Open("sqlite", "godiff.db")
 

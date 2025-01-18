@@ -22,3 +22,7 @@ type Project struct {
 	id   int
 	name string
 }
+
+func NewProject(id int, name string) Project {
+	return Project{id, name}
+}

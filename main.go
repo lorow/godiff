@@ -112,7 +112,7 @@ func main() {
 	}
 
 	var err error
-	err = InitiDatabase()
+	err = InitDatabase()
 	if err != nil {
 		fmt.Printf("Something went wrong while trying to open the database: %v \n", err)
 		os.Exit(1)
