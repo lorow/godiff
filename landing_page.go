@@ -28,6 +28,11 @@ func NewLandingPage() LandingPageModel {
 }
 
 func (m LandingPageModel) Init() tea.Cmd {
+	if !m.hasLoadedProjects && !m.loadingProjects {
+		m.loadingProjects = true
+		return LoadProjectsCmd(10, 0)
+	}
+
 	return nil
 }
 
@@ -59,11 +64,6 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selected = m.cursor
 			return m, RouteTo("editor", SelectedProject(m.projects[m.cursor].id))
 		}
-	}
-
-	if !m.hasLoadedProjects && !m.loadingProjects {
-		m.loadingProjects = true
-		return m, LoadProjectsCmd(10, 0)
 	}
 
 	return m, nil

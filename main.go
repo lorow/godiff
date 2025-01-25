@@ -20,7 +20,6 @@ type model struct {
 	logs         io.Writer
 	currentRoute string
 	views        map[string]tea.Model
-	commandBar   CommandBarModel
 }
 
 func newInitialModel(logs_file io.Writer) model {
@@ -31,13 +30,11 @@ func newInitialModel(logs_file io.Writer) model {
 		logs:         logs_file,
 		currentRoute: "/",
 		views:        views,
-		commandBar:   NewCommandBar(),
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
-	cmds = append(cmds, m.commandBar.Init())
 
 	for _, view := range m.views {
 		cmds = append(cmds, view.Init())
@@ -53,33 +50,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		// technically we should be sending two different messages here
-		// one for the views and one for the commandbar
-		// but that'd mean we'd have to update **every** view
-		// each time we get a message.
-		// so this should be fine
 		m.size = msg
 		for key, view := range m.views {
 			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
 			m.views[key] = viewModel
 		}
-		commandBarModel, _ := m.commandBar.Update(SetNewSizeMsg{width: msg.Width, height: 1})
-		m.commandBar = commandBarModel.(CommandBarModel)
 		return m, nil
-	}
-
-	commandBarModel, commandBarMessage := m.commandBar.Update(msg)
-	m.commandBar = commandBarModel.(CommandBarModel)
-	// if the command bar returned anything
-	// it means it reacted to the current message
-	// so we need to return it and react to it in the next update
-	if commandBarMessage != nil {
-		return m, commandBarMessage
-	}
-
-	// if we're in command mode, we can't have views receive any input
-	if m.commandBar.GetState() == CommandBarStateCommand {
-		return m, nil
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			return m, tea.Quit
+		}
 	}
 
 	viewModel, viewMessage := m.views[m.currentRoute].Update(msg)
@@ -95,7 +76,6 @@ func (m model) View() string {
 	if currentView, ok := m.views[m.currentRoute]; ok {
 		doc.WriteString(currentView.View())
 	}
-	doc.WriteString(m.commandBar.View())
 
 	return appDocument.Render(doc.String())
 }
