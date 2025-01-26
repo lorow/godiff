@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/charmbracelet/lipgloss"
+	"godiff/components/ItemList"
 	"io"
 	"os"
 	"strings"
@@ -19,6 +20,7 @@ type model struct {
 	size         tea.WindowSizeMsg
 	logs         io.Writer
 	currentRoute string
+	testList     ItemList.Model
 	views        map[string]tea.Model
 }
 
@@ -30,6 +32,7 @@ func newInitialModel(logs_file io.Writer) model {
 		logs:         logs_file,
 		currentRoute: "/",
 		views:        views,
+		testList:     ItemList.New("test", "no items loaded"),
 	}
 }
 
@@ -55,6 +58,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
 			m.views[key] = viewModel
 		}
+		m.testList.SetWidth(msg.Width - 3)
+		m.testList.SetHeight(msg.Height - 10)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -73,9 +78,11 @@ func (m model) View() string {
 	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height)
 	doc := strings.Builder{}
 
-	if currentView, ok := m.views[m.currentRoute]; ok {
-		doc.WriteString(currentView.View())
-	}
+	doc.WriteString(m.testList.View())
+
+	//if currentView, ok := m.views[m.currentRoute]; ok {
+	//	doc.WriteString(currentView.View())
+	//}
 
 	return appDocument.Render(doc.String())
 }
