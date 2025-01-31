@@ -1,6 +1,9 @@
 package ItemList
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
+)
 
 type DefaultItemStyles struct {
 	NormalTitle         lipgloss.Style
@@ -31,6 +34,7 @@ func NewDefaultItemStyles() (s DefaultItemStyles) {
 
 // DefaultItem describes an item that can be rendered by the default item renderer
 // it expands on the Item type and requests to provide Title() and Description()
+// due to List requiring render() to take an item, this interface is mostly for validation
 type DefaultItem interface {
 	Item
 	Title() string
@@ -43,6 +47,52 @@ type DefaultItemRenderer struct {
 	spacing int
 }
 
+func (d DefaultItemRenderer) Render(item Item, model Model, index int) string {
+
+	// if for some reason the list has zero width, we don't have to anything
+	if model.width <= 0 {
+		return ""
+	}
+
+	defaultItem, isDefaultItem := item.(DefaultItem)
+	if !isDefaultItem {
+		return ""
+	}
+
+	title := defaultItem.Title()
+	description := defaultItem.Description()
+
+	// we also have to make sure the text doesn't overflow the list
+	textWidth := model.width - d.Styles.NormalTitle.GetPaddingLeft() - d.Styles.NormalTitle.GetPaddingRight()
+	title = ansi.Truncate(title, textWidth, "...")
+	description = ansi.Truncate(description, textWidth, "...")
+
+	isSelected := index == model.GetIndex()
+
+	if isSelected {
+		title = d.Styles.SelectedTitle.Render(title)
+		description = d.Styles.SelectedDescription.Render(description)
+		return lipgloss.JoinVertical(lipgloss.Top, title, description)
+	}
+
+	title = d.Styles.NormalTitle.Render(title)
+	description = d.Styles.NormalDescription.Render(description)
+	return lipgloss.JoinVertical(lipgloss.Top, title, description)
+}
+
+func (d DefaultItemRenderer) Height() int {
+	return d.height
+}
+
+func (d DefaultItemRenderer) Spacing() int {
+	return d.spacing
+}
+
 func NewDefaultItemRenderer() DefaultItemRenderer {
-	return DefaultItemRenderer{}
+	return DefaultItemRenderer{
+		// update this when the widget height changes
+		Styles:  NewDefaultItemStyles(),
+		height:  2,
+		spacing: 1,
+	}
 }

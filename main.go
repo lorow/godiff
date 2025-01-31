@@ -24,15 +24,30 @@ type model struct {
 	views        map[string]tea.Model
 }
 
+type testItem struct{}
+
+func (i testItem) Title() string {
+	return "test Title"
+}
+
+func (i testItem) Description() string {
+	return "Some testing description just to have something to work with"
+}
+
 func newInitialModel(logs_file io.Writer) model {
 	views := make(map[string]tea.Model)
 	views["/"] = NewLandingPage()
+	listItems := []ItemList.Item{
+		testItem{},
+		testItem{},
+		testItem{},
+	}
 
 	return model{
 		logs:         logs_file,
 		currentRoute: "/",
 		views:        views,
-		testList:     ItemList.New("test", "no items loaded"),
+		testList:     ItemList.New("test", "no items loaded", listItems, 1),
 	}
 }
 

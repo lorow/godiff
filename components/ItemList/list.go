@@ -13,39 +13,30 @@ type Item interface{}
 type ItemRenderer interface {
 	Render(item Item, model Model, index int) string
 	Height() int
-	Width() int
 	Spacing() int
 }
 
-type State int
-
-const (
-	Default State = iota
-	Loading
-	Loaded
-	Error
-)
-
 type Model struct {
 	title        string
+	paddingTop   int
 	noItemsText  string
 	styles       Styles
 	width        int
 	height       int
 	cursor       int
-	state        State
 	items        []Item
 	itemRenderer ItemRenderer
 }
 
-func New(title, noItemsText string) Model {
+func New(title, noItemsText string, items []Item, paddingTop int) Model {
 	return Model{
-		title:       title,
-		noItemsText: noItemsText,
-		styles:      DefaultStyles(),
-		items:       []Item{},
-		state:       Default,
-		cursor:      -1,
+		title:        title,
+		noItemsText:  noItemsText,
+		styles:       DefaultStyles(),
+		items:        items,
+		cursor:       0,
+		paddingTop:   paddingTop,
+		itemRenderer: NewDefaultItemRenderer(),
 	}
 }
 
@@ -57,34 +48,41 @@ func (m Model) View() string {
 
 	container := m.styles.Container.Width(m.width).Height(m.height)
 
-	titleRendered := m.styles.Title.Render(m.title)
+	title := m.styles.Title.Render(m.title)
+	titleRendered := lipgloss.JoinVertical(lipgloss.Top, title, strings.Repeat("\n", m.paddingTop-1))
 	availableHeight -= lipgloss.Height(titleRendered)
 	sections = append(sections, titleRendered)
 
-	content := lipgloss.NewStyle().Height(availableHeight).Render(m.renderItems())
+	content := lipgloss.NewStyle().Height(availableHeight).Render(m.renderItems(availableHeight))
 	sections = append(sections, content)
 
 	return container.Render(lipgloss.JoinVertical(lipgloss.Top, sections...))
 }
 
-func (m Model) renderItems() string {
+func (m Model) renderItems(availableHeight int) string {
+	var view strings.Builder
 	items := m.VisibleItems()
 	itemsCount := len(items)
-
-	var view strings.Builder
+	totalItemHeight := m.itemRenderer.Height() + m.itemRenderer.Spacing()
+	maxVisibleItems := max(0, availableHeight/totalItemHeight)
 
 	if itemsCount == 0 {
 		return m.styles.NoItems.Render(m.noItemsText)
 	}
 
-	for i, item := range items {
+	for i, item := range items[:min(itemsCount, maxVisibleItems)] {
+		// todo add windowing mechanism here
 		view.WriteString(m.itemRenderer.Render(item, m, i))
 		if i != itemsCount-1 {
 			view.WriteString(strings.Repeat("\n", m.itemRenderer.Spacing()+1))
 		}
+		maxVisibleItems--
 	}
 
-	// todo see if this will break if we don't have enough items
+	// if we didn't have enough items to fill the view, we need to fill it up with
+	// new lines, otherwise drawing anything else might get drawn in the list
+	linesToFill := maxVisibleItems * totalItemHeight
+	view.WriteString(strings.Repeat("\n", linesToFill))
 
 	return view.String()
 }
@@ -103,10 +101,6 @@ func (m *Model) CursorDown() {
 
 func (m *Model) SetItems(items []Item) {
 	m.items = items
-}
-
-func (m *Model) SetState(state State) {
-	m.state = state
 }
 
 func (m *Model) SetItemRenderer(renderer ItemRenderer) {
@@ -131,4 +125,8 @@ func (m Model) GetCurrentSelection() (Item, error) {
 func (m Model) VisibleItems() []Item {
 	// prepared for adding support for filtering
 	return m.items
+}
+
+func (m Model) GetIndex() int {
+	return m.cursor
 }
