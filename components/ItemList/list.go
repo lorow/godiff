@@ -17,61 +17,64 @@ type ItemRenderer interface {
 }
 
 type Model struct {
-	title        string
-	paddingTop   int
-	noItemsText  string
-	styles       Styles
-	width        int
-	height       int
-	cursor       int
-	items        []Item
-	itemRenderer ItemRenderer
+	title           string
+	noItemsText     string
+	styles          Styles
+	paddingTop      int
+	width           int
+	height          int
+	availableHeight int
+	cursor          int
+	items           []Item
+	itemRenderer    ItemRenderer
 }
 
 func New(title, noItemsText string, items []Item, paddingTop int) Model {
-	return Model{
-		title:        title,
-		noItemsText:  noItemsText,
-		styles:       DefaultStyles(),
-		items:        items,
-		cursor:       0,
-		paddingTop:   paddingTop,
-		itemRenderer: NewDefaultItemRenderer(),
+	styles := DefaultStyles()
+	model := Model{
+		noItemsText:     noItemsText,
+		styles:          styles,
+		items:           items,
+		width:           0,
+		height:          0,
+		availableHeight: 0,
+		cursor:          0,
+		itemRenderer:    NewDefaultItemRenderer(),
 	}
+
+	model.SetTitle(title)
+	model.SetPaddingTop(paddingTop)
+
+	return model
 }
 
 func (m Model) View() string {
-	var (
-		sections        []string
-		availableHeight = m.height
-	)
+	var sections []string
 
 	container := m.styles.Container.Width(m.width).Height(m.height)
+	sections = append(sections, m.title)
 
-	title := m.styles.Title.Render(m.title)
-	titleRendered := lipgloss.JoinVertical(lipgloss.Top, title, strings.Repeat("\n", m.paddingTop-1))
-	availableHeight -= lipgloss.Height(titleRendered)
-	sections = append(sections, titleRendered)
-
-	content := lipgloss.NewStyle().Height(availableHeight).Render(m.renderItems(availableHeight))
+	content := lipgloss.NewStyle().Height(m.getAvailableHeight()).Render(m.renderItems())
 	sections = append(sections, content)
 
 	return container.Render(lipgloss.JoinVertical(lipgloss.Top, sections...))
 }
 
-func (m Model) renderItems(availableHeight int) string {
+func (m Model) renderItems() string {
 	var view strings.Builder
-	items := m.VisibleItems()
-	itemsCount := len(items)
-	totalItemHeight := m.itemRenderer.Height() + m.itemRenderer.Spacing()
+	availableHeight := m.getAvailableHeight()
+	totalItemHeight := m.getItemHeight()
+
+	visibleItems := m.VisibleItems()
+	itemsCount := len(visibleItems)
+
 	maxVisibleItems := max(0, availableHeight/totalItemHeight)
 
 	if itemsCount == 0 {
 		return m.styles.NoItems.Render(m.noItemsText)
 	}
 
-	for i, item := range items[:min(itemsCount, maxVisibleItems)] {
-		// todo add windowing mechanism here
+	for i, item := range visibleItems[:min(itemsCount, maxVisibleItems)] {
 		view.WriteString(m.itemRenderer.Render(item, m, i))
 		if i != itemsCount-1 {
 			view.WriteString(strings.Repeat("\n", m.itemRenderer.Spacing()+1))
@@ -79,7 +82,7 @@ func (m Model) renderItems(availableHeight int) string {
 		maxVisibleItems--
 	}
 
-	// if we didn't have enough items to fill the view, we need to fill it up with
+	// if we didn't have enough visibleItems to fill the view, we need to fill it up with
 	// new lines, otherwise drawing anything else might get drawn in the list
 	linesToFill := maxVisibleItems * totalItemHeight
 	view.WriteString(strings.Repeat("\n", linesToFill))
@@ -109,10 +112,33 @@ func (m *Model) SetItemRenderer(renderer ItemRenderer) {
 
 func (m *Model) SetHeight(height int) {
 	m.height = height
+	m.recalculateAvailableHeight()
 }
 
 func (m *Model) SetWidth(width int) {
 	m.width = width
+}
+
+func (m *Model) SetTitle(title string) {
+	m.title = m.styles.Title.Render(title)
+	m.recalculateAvailableHeight()
+}
+
+func (m *Model) SetPaddingTop(paddingTop int) {
+	m.title = lipgloss.JoinVertical(lipgloss.Top, m.title, strings.Repeat("\n", paddingTop-1))
+	m.recalculateAvailableHeight()
+}
+
+func (m *Model) recalculateAvailableHeight() {
+	m.availableHeight = m.height - lipgloss.Height(m.title)
+}
+
+func (m Model) getAvailableHeight() int {
+	return m.availableHeight
+}
+
+func (m Model) getItemHeight() int {
+	return m.itemRenderer.Height() + m.itemRenderer.Spacing()
 }
 
 func (m Model) GetCurrentSelection() (Item, error) {
@@ -123,7 +149,8 @@ func (m Model) GetCurrentSelection() (Item, error) {
 }
 
 func (m Model) VisibleItems() []Item {
-	// prepared for adding support for filtering
+	// visible items should return only the items that fit the current view window
+	// or, if we're filtering - filtered items that would fit in the very same window
 	return m.items
 }
 
