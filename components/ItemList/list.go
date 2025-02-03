@@ -77,7 +77,9 @@ func (m Model) renderItems() string {
 	}
 
 	for i, item := range visibleItems[:min(itemsCount, maxVisibleItems)] {
-		view.WriteString(m.itemRenderer.Render(item, m, i))
+		// since we've moved the view window, we need to update the index as well
+		itemIndex := m.viewWindowBounds[0] + i
+		view.WriteString(m.itemRenderer.Render(item, m, itemIndex))
 		if i != itemsCount-1 {
 			view.WriteString(strings.Repeat("\n", m.itemRenderer.Spacing()+1))
 		}
@@ -95,12 +97,23 @@ func (m Model) renderItems() string {
 func (m *Model) CursorUp() {
 	if m.cursor > 0 {
 		m.cursor--
+		// we're at the bound of the view window, but not yet at the top
+		if m.cursor < m.viewWindowBounds[0] {
+			m.viewWindowBounds[0]--
+			m.viewWindowBounds[1]--
+		}
 	}
 }
 
 func (m *Model) CursorDown() {
-	if m.cursor < len(m.items)-1 {
+	ceiling := len(m.items) - 1
+	if m.cursor < ceiling {
 		m.cursor++
+
+		if m.cursor == m.viewWindowBounds[1] && m.cursor <= ceiling {
+			m.viewWindowBounds[0]++
+			m.viewWindowBounds[1]++
+		}
 	}
 }
 
