@@ -48,7 +48,6 @@ type DefaultItemRenderer struct {
 }
 
 func (d DefaultItemRenderer) Render(item Item, model Model, index int) string {
-
 	// if for some reason the list has zero width, we don't have to anything
 	if model.width <= 0 {
 		return ""

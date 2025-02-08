@@ -2,8 +2,10 @@ package ItemList
 
 import (
 	"errors"
-	"github.com/charmbracelet/lipgloss"
+	"godiff/components/scrollablePaginator"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Item defines a common interface that represents a given item in the list
@@ -17,31 +19,33 @@ type ItemRenderer interface {
 }
 
 type Model struct {
-	title            string
-	noItemsText      string
-	styles           Styles
-	paddingTop       int
-	width            int
-	height           int
-	availableHeight  int
-	cursor           int
-	items            []Item
-	viewWindowBounds [2]int
-	itemRenderer     ItemRenderer
+	title           string
+	noItemsText     string
+	styles          Styles
+	paddingTop      int
+	width           int
+	height          int
+	availableHeight int
+	cursor          int
+	amountOfItems   int
+	items           []Item
+	paginator       scrollablePaginator.Model
+	itemRenderer    ItemRenderer
 }
 
 func New(title, noItemsText string, items []Item, paddingTop int) Model {
 	styles := DefaultStyles()
 	model := Model{
-		noItemsText:      noItemsText,
-		styles:           styles,
-		items:            items,
-		width:            0,
-		height:           0,
-		availableHeight:  0,
-		cursor:           0,
-		viewWindowBounds: [2]int{0, 0},
-		itemRenderer:     NewDefaultItemRenderer(),
+		noItemsText:     noItemsText,
+		styles:          styles,
+		amountOfItems:   len(items),
+		items:           items,
+		width:           0,
+		height:          0,
+		availableHeight: 0,
+		cursor:          0,
+		paginator:       scrollablePaginator.New(),
+		itemRenderer:    NewDefaultItemRenderer(),
 	}
 
 	model.SetTitle(title)
@@ -78,7 +82,7 @@ func (m Model) renderItems() string {
 
 	for i, item := range visibleItems[:min(itemsCount, maxVisibleItems)] {
 		// since we've moved the view window, we need to update the index as well
-		itemIndex := m.viewWindowBounds[0] + i
+		itemIndex := m.paginator.GetLowerBound() + i
 		view.WriteString(m.itemRenderer.Render(item, m, itemIndex))
 		if i != itemsCount-1 {
 			view.WriteString(strings.Repeat("\n", m.itemRenderer.Spacing()+1))
@@ -98,26 +102,25 @@ func (m *Model) CursorUp() {
 	if m.cursor > 0 {
 		m.cursor--
 		// we're at the bound of the view window, but not yet at the top
-		if m.cursor < m.viewWindowBounds[0] {
-			m.viewWindowBounds[0]--
-			m.viewWindowBounds[1]--
+		if m.cursor < m.paginator.GetLowerBound() {
+			m.paginator.MoveViewWindowUp()
 		}
 	}
 }
 
 func (m *Model) CursorDown() {
-	ceiling := len(m.items) - 1
+	ceiling := m.amountOfItems - 1
 	if m.cursor < ceiling {
 		m.cursor++
 
-		if m.cursor == m.viewWindowBounds[1] && m.cursor <= ceiling {
-			m.viewWindowBounds[0]++
-			m.viewWindowBounds[1]++
+		if m.cursor == m.paginator.GetUpperBound() && m.cursor <= ceiling {
+			m.paginator.MoveViewWindowDown()
 		}
 	}
 }
 
 func (m *Model) SetItems(items []Item) {
+	m.amountOfItems = len(items)
 	m.items = items
 }
 
@@ -153,18 +156,7 @@ func (m *Model) recalculateAvailableHeight() {
 
 func (m *Model) recalculateViewBounds() {
 	// we need to update the max visible area
-
-	distanceBetweenCurrentBounds := m.viewWindowBounds[1] - m.viewWindowBounds[0]
-	newMaxDistance := m.getAvailableHeight() / m.getItemHeight()
-	if m.viewWindowBounds[0] == 0 && m.viewWindowBounds[1] == 0 {
-		// we're just starting then, we only need the upper bound
-		m.viewWindowBounds[1] = max(0, newMaxDistance)
-		return
-	}
-	// otherwise we have to expand the list downwards, so
-	expandViewBy := newMaxDistance - distanceBetweenCurrentBounds
-	m.viewWindowBounds[1] += expandViewBy
-
+	m.paginator.RecalculateViewBounds(m.getAvailableHeight(), m.getItemHeight())
 }
 
 func (m Model) getAvailableHeight() int {
@@ -185,7 +177,8 @@ func (m Model) GetCurrentSelection() (Item, error) {
 func (m Model) VisibleItems() []Item {
 	// visible items should return only the items that fit the current view window
 	// or, if we're filtering - filtered items that would fit in the very same window
-	return m.items[m.viewWindowBounds[0]:min(m.viewWindowBounds[1], len(m.items))]
+	viewBounds := m.paginator.GetViewWindowBounds()
+	return m.items[viewBounds[0]:min(viewBounds[1], m.amountOfItems)]
 }
 
 func (m Model) GetIndex() int {
