@@ -33,11 +33,16 @@ type Model struct {
 	itemRenderer    ItemRenderer
 }
 
-func New(title, noItemsText string, items []Item, paddingTop int) Model {
+func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, paddingTop int) (Model, error) {
+	if paddingTop <= 0 {
+		return Model{}, errors.New("padding must be greater than 0")
+	}
+
 	styles := DefaultStyles()
 	model := Model{
 		noItemsText:     noItemsText,
 		styles:          styles,
+		paddingTop:      paddingTop,
 		amountOfItems:   len(items),
 		items:           items,
 		width:           0,
@@ -45,13 +50,13 @@ func New(title, noItemsText string, items []Item, paddingTop int) Model {
 		availableHeight: 0,
 		cursor:          0,
 		paginator:       scrollablePaginator.New(),
-		itemRenderer:    NewDefaultItemRenderer(),
+		itemRenderer:    itemRenderer,
 	}
 
 	model.SetTitle(title)
 	model.SetPaddingTop(paddingTop)
 
-	return model
+	return model, nil
 }
 
 func (m Model) View() string {
@@ -139,7 +144,8 @@ func (m *Model) SetWidth(width int) {
 }
 
 func (m *Model) SetTitle(title string) {
-	m.title = m.styles.Title.Render(title)
+	renderedTItle := m.styles.Title.Render(title)
+	m.title = lipgloss.JoinVertical(lipgloss.Top, renderedTItle, strings.Repeat("\n", m.paddingTop-1))
 	m.recalculateAvailableHeight()
 	m.recalculateViewBounds()
 }
@@ -165,6 +171,10 @@ func (m Model) getAvailableHeight() int {
 
 func (m Model) getItemHeight() int {
 	return m.itemRenderer.Height() + m.itemRenderer.Spacing()
+}
+
+func (m Model) GetItemsCount() int {
+	return m.amountOfItems
 }
 
 func (m Model) GetCurrentSelection() (Item, error) {

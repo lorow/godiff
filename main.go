@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"godiff/components/ItemList"
 	"io"
 	"os"
 	"strings"
+
+	"github.com/charmbracelet/lipgloss"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
@@ -20,34 +20,17 @@ type model struct {
 	size         tea.WindowSizeMsg
 	logs         io.Writer
 	currentRoute string
-	testList     ItemList.Model
 	views        map[string]tea.Model
-}
-
-type testItem struct{}
-
-func (i testItem) Title() string {
-	return "test Title"
-}
-
-func (i testItem) Description() string {
-	return "Some testing description just to have something to work with"
 }
 
 func newInitialModel(logs_file io.Writer) model {
 	views := make(map[string]tea.Model)
 	views["/"] = NewLandingPage()
-	listItems := []ItemList.Item{
-		testItem{},
-		testItem{},
-		testItem{},
-	}
 
 	return model{
 		logs:         logs_file,
 		currentRoute: "/",
 		views:        views,
-		testList:     ItemList.New("test", "no items loaded", listItems, 1),
 	}
 }
 
@@ -69,12 +52,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.size = msg
+
 		for key, view := range m.views {
 			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
 			m.views[key] = viewModel
 		}
-		m.testList.SetWidth(msg.Width - 3)
-		m.testList.SetHeight(msg.Height - 10)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -93,14 +75,98 @@ func (m model) View() string {
 	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height)
 	doc := strings.Builder{}
 
-	doc.WriteString(m.testList.View())
-
-	//if currentView, ok := m.views[m.currentRoute]; ok {
-	//	doc.WriteString(currentView.View())
-	//}
+	if currentView, ok := m.views[m.currentRoute]; ok {
+		doc.WriteString(currentView.View())
+	}
 
 	return appDocument.Render(doc.String())
 }
+
+// change of plans.
+// here's the new idea:
+// inspired by the posting.sh thing
+// I wanna get rid of the bottom command bar
+// instead it's gonna live in a popup - figure out how to make popup with bubble tea
+// this popup will have a search input that's gonna go through all of the commands
+// and dispatch the proper one once selected.
+
+// I'd also want to have a jump mechanism where by inputing jump button
+// we go into jump state, in that state we can cancel or jump focus to something
+
+// landing page view
+//|--------------------------------------------------------------------------------------------------------------------|
+//|  GoDiff - 1.0.0                                                                                                    |
+//|                                                                                                                    |
+//|   - Projects - 2 -----------------------------------------------------------------------------------------------   |
+//|   |                                  				                                                    	   |   |
+//|   |  Project name                                 	                                                    	   |   |
+//|   |    Short project description                   	                                                    	   |   |
+//|   |                                  				                                                    	   |   |
+//|   |  Project name                                 	                                                    	   |   |
+//|   |    Short project description                   	                                                    	   |   |
+//|   |                                  				                                                    	   |   |
+//|   --------------------------------------------------------------------------------------------------------------   |
+//|                                                                                                                    |
+//| up/down select project ^n new project ^o commands enter - load                                                     |
+//|--------------------------------------------------------------------------------------------------------------------|
+
+// project page view - single editor
+//|--------------------------------------------------------------------------------------------------------------------|
+//|  GoDiff - 1.0.0                                                                                                    |
+//|                                                                                                                    |
+//|   |------------------------------------------------------------------------------------------------------------|   |
+//|   | GET | http://some-service.dev/                                                                  |          |   |
+//|   |------------------------------------------------------------------------------------------------------------|   |
+//|                                                                                                                    |
+//|   |------------------------------------------------------------------------------------------------------------|   |
+//|   |    Short project description                                                                               |   |
+//|   |                                                                                                            |   |
+//|   |  Project name                                                                                              |   |
+//|   |    Short project description                                                                               |   |
+//|   |                                                                                                            |   |
+//|   --------------------------------------------------------------------------------------------------------------   |
+//|                                                                                                                    |
+//| <-/up/down/-> change focus ^s save ^o commands ^p jump i edit                                                      |
+//|--------------------------------------------------------------------------------------------------------------------|
+
+// project page view - double editor
+//|--------------------------------------------------------------------------------------------------------------------|
+//|  GoDiff - 1.0.0                                                                                                    |
+//|                                                                                                                    |
+//|   |-----------------------------------------------------|    |-------------------------------------------------|   |
+//|   | GET | http://some-service.dev/                |  	|    | GET | http://some-service.dev/            |     |   |
+//|   |-----------------------------------------------------|    |-------------------------------------------------|   |
+//|                                                                                                                    |
+//|   |-----------------------------------------------------|    |-------------------------------------------------|   |
+//|   |    Short project description                        |    |    Short project description                    |   |
+//|   |                                                     |    |                                                 |   |
+//|   |  Project name                                       |    |  Project name                                   |   |
+//|   |    Short project description                        |    |    Short project description                    |   |
+//|   |                                                     |    |                                                 |   |
+//|   -------------------------------------------------------    ---------------------------------------------------   |
+//|                                                                                                                    |
+//| ^c exit ^s save ^o commands ^p jump i edit enter send                                                              |
+//|--------------------------------------------------------------------------------------------------------------------|
+
+// command popup
+//|--------------------------------------------------------------------------------------------------------------------|
+//|                                                                                                                    |
+//|                           |------------------------------------------------------------|                           |
+//|                           | Search for command                                         |                           |
+//|                           |------------------------------------------------------------|                           |
+//|                           |  Some command                                              |                           |
+//|                           |  Some command explanation                                  |                           |
+//|                           |                                                            |                           |
+//|                           |  Some command                                              |                           |
+//|                           |  Some command explanation                                  |                           |
+//|                           |                                                            |                           |
+//|                           |  Some command                                              |                           |
+//|                           |  Some command explanation                                  |                           |
+//|                           |                                                            |                           |
+//|                           |------------------------------------------------------------|                           |
+//|                                                                                                                    |
+//|                                                                                                                    |
+//|--------------------------------------------------------------------------------------------------------------------|
 
 func main() {
 	var dump *os.File

@@ -2,34 +2,57 @@ package main
 
 import (
 	"fmt"
+	"godiff/components/ItemList"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
+type LandingPageState int
+
+const (
+	Initial LandingPageState = iota
+	LoadingProjects
+	LoadedProjects
+	ErrorLoadingProjects
+)
+
 type LandingPageModel struct {
-	width  int
-	height int
-	// replace this with enum
-	hasLoadedProjects bool
-	loadingProjects   bool
-	projects          []Project
-	cursor            int
-	selected          int
+	width    int
+	height   int
+	state    LandingPageState
+	itemList ItemList.Model
+	cursor   int
+	selected int
 }
 
 type SelectedProject int
 
+type RenderableProject struct {
+	Project
+}
+
+func (p RenderableProject) Title() string {
+	return fmt.Sprintf("%d - %s", p.Project.id, p.Project.name)
+}
+
+func (p RenderableProject) Description() string {
+	return "Dummy description"
+}
+
 func NewLandingPage() LandingPageModel {
+	itemRender := ItemList.NewDefaultItemRenderer()
+	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1)
 	return LandingPageModel{
+		itemList: itemList,
 		selected: -1,
 	}
 }
 
 func (m LandingPageModel) Init() tea.Cmd {
-	if !m.hasLoadedProjects && !m.loadingProjects {
-		m.loadingProjects = true
+	if m.state == Initial {
+		m.state = LoadingProjects
 		return LoadProjectsCmd(10, 0)
 	}
 
@@ -43,26 +66,27 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SetNewSizeMsg:
 		m.width = msg.width
 		m.height = msg.height
+
+		m.itemList.SetWidth(msg.width - 3)
+		m.itemList.SetHeight(msg.height - 6)
+
 		return m, nil
 	case LoadedProjectsMsg:
-		m.hasLoadedProjects = true
-		m.loadingProjects = false
-		m.projects = msg.projects
+		m.state = LoadedProjects
+		m.itemList.SetItems([]ItemList.Item(msg.projects))
+		m.itemList.SetTitle(fmt.Sprintf("Projects - %d", m.itemList.GetItemsCount()))
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up":
-			if m.cursor > 0 {
-				m.cursor--
-			}
+			m.itemList.CursorUp()
 			return m, nil
 		case "down":
-			if m.cursor < len(m.projects)-1 {
-				m.cursor++
-			}
+			m.itemList.CursorDown()
 			return m, nil
 		case "enter":
 			m.selected = m.cursor
-			return m, RouteTo("editor", SelectedProject(m.projects[m.cursor].id))
+			currentSelection, _ := m.itemList.GetCurrentSelection()
+			return m, RouteTo("editor", SelectedProject(currentSelection.(Project).id))
 		}
 	}
 
@@ -73,42 +97,28 @@ func (m LandingPageModel) View() string {
 	windowContainer := lipgloss.NewStyle().Width(m.width).Height(m.height)
 	doc := strings.Builder{}
 
-	desc := lipgloss.JoinVertical(lipgloss.Left,
-		descStyle.Render("Style Definitions for Nice Terminal Layouts"),
-		infoStyle.Render("From Charm"+divider+url("https://github.com/charmbracelet/lipgloss")),
-	)
+	title := lipgloss.NewStyle().PaddingLeft(2).Render("GoDiff - 1.0.0")
+	quitText := lipgloss.NewStyle().PaddingRight(2).Render("Press Q to quit")
+	middleSpacer := lipgloss.NewStyle().Width(m.width - lipgloss.Width(title) - lipgloss.Width(quitText)).Render("")
 
-	row := lipgloss.JoinHorizontal(lipgloss.Top, "", desc)
-	doc.WriteString(row + "\n\n")
+	doc.WriteString(lipgloss.NewStyle().PaddingTop(1).PaddingBottom(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText)))
+	doc.WriteString(m.itemList.View())
 
-	s := ""
-
-	for i, choice := range m.projects {
-		cursor := " "
-		if i == m.cursor {
-			cursor = ">"
-		}
-		checked := " "
-
-		if i == m.selected {
-			checked = "█"
-		}
-
-		s += fmt.Sprintf("%s [%s] %s\n", cursor, checked, choice.name)
-	}
-
-	doc.WriteString(s + "\n\n")
-	doc.WriteString(fmt.Sprintf("height: %d \n", m.height))
 	return windowContainer.Render(doc.String())
 }
 
 type LoadedProjectsMsg struct {
-	projects []Project
+	projects []ItemList.Item
 }
 
 func LoadProjectsCmd(limit, offset int) tea.Cmd {
 	return func() tea.Msg {
-		projects := GetProjects(limit, offset)
+		var projects []ItemList.Item
+
+		for _, project := range GetProjects(limit, offset) {
+			projects = append(projects, RenderableProject{project})
+		}
+
 		return LoadedProjectsMsg{projects}
 	}
 }

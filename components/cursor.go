@@ -3,9 +3,10 @@ package components
 import (
 	"context"
 	"errors"
+	"time"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"time"
 )
 
 var lastId = 0
@@ -138,6 +139,7 @@ func BlinkCursor() tea.Msg {
 	return InitCursorBlinkMsg{}
 }
 
+// todo refactor this to use tea commands instead of channels
 func (m *CursorModel) BlinkCmd() tea.Cmd {
 	if m.mode != CursorBlink {
 		return nil

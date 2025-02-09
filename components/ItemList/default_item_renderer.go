@@ -18,6 +18,7 @@ func NewDefaultItemStyles() (s DefaultItemStyles) {
 		Padding(0, 0, 0, 2) //nolint:mnd
 
 	s.NormalDescription = s.NormalTitle.
+		PaddingLeft(3).
 		Foreground(lipgloss.AdaptiveColor{Light: "#A49FA5", Dark: "#777777"})
 
 	s.SelectedTitle = lipgloss.NewStyle().
@@ -27,6 +28,7 @@ func NewDefaultItemStyles() (s DefaultItemStyles) {
 		Padding(0, 0, 0, 1)
 
 	s.SelectedDescription = s.SelectedTitle.
+		PaddingLeft(2).
 		Foreground(lipgloss.AdaptiveColor{Light: "#F793FF", Dark: "#AD58B4"})
 
 	return s

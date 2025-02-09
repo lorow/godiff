@@ -1,23 +1,18 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "Debug Go",
-        "type": "go",
-        "request": "launch",
-        "mode": "debug",
-        "program": "${workspaceRoot}/"
-      },
-        {
-            "name": "Attach to Sunbeam",
-            "type": "go",
-            "debugAdapter": "dlv-dap",
-            "request": "attach",
-            "mode": "remote",
-            "remotePath": "${workspaceFolder}",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "preLaunchTask": "Run headless dlv"
-        }
-    ],
-  }
+  "configurations": [
+    {
+      "name": "Launch Package",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}"
+    },
+    {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 0
+    }
+  ]
+}
