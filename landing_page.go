@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"godiff/components/ItemList"
+	"godiff/components/Router"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -86,7 +87,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.selected = m.cursor
 			currentSelection, _ := m.itemList.GetCurrentSelection()
-			return m, RouteTo("editor", SelectedProject(currentSelection.(Project).id))
+			return m, Router.RouteTo("editor", SelectedProject(currentSelection.(Project).id))
 		}
 	}
 

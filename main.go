@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"godiff/components/Router"
 	"io"
 	"os"
 	"strings"
@@ -17,27 +18,26 @@ type SetNewSizeMsg struct {
 }
 
 type model struct {
-	size         tea.WindowSizeMsg
-	logs         io.Writer
-	currentRoute string
-	views        map[string]tea.Model
+	size   tea.WindowSizeMsg
+	logs   io.Writer
+	router Router.Model
 }
 
 func newInitialModel(logs_file io.Writer) model {
-	views := make(map[string]tea.Model)
-	views["/"] = NewLandingPage()
+	view_router := Router.New(
+		Router.WithStartingPage(NewLandingPage()),
+	)
 
 	return model{
-		logs:         logs_file,
-		currentRoute: "/",
-		views:        views,
+		logs:   logs_file,
+		router: *view_router,
 	}
 }
 
 func (m model) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	for _, view := range m.views {
+	for _, view := range m.router.GetViews() {
 		cmds = append(cmds, view.Init())
 	}
 
@@ -52,10 +52,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.size = msg
-
-		for key, view := range m.views {
+		for key, view := range m.router.GetViews() {
 			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
-			m.views[key] = viewModel
+			m.router.UpdateRoute(key, viewModel)
 		}
 		return m, nil
 	case tea.KeyMsg:
@@ -65,8 +64,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	viewModel, viewMessage := m.views[m.currentRoute].Update(msg)
-	m.views[m.currentRoute] = viewModel
+	currentView := m.router.GetCurrentVIew()
+	viewModel, viewMessage := currentView.Update(msg)
+	m.router.UpdateRoute(m.router.GetCUrrentRoute(), viewModel)
 
 	return m, viewMessage
 }
@@ -75,9 +75,8 @@ func (m model) View() string {
 	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height)
 	doc := strings.Builder{}
 
-	if currentView, ok := m.views[m.currentRoute]; ok {
-		doc.WriteString(currentView.View())
-	}
+	currentView := m.router.GetCurrentVIew()
+	doc.WriteString(currentView.View())
 
 	return appDocument.Render(doc.String())
 }
@@ -97,14 +96,16 @@ func (m model) View() string {
 //|--------------------------------------------------------------------------------------------------------------------|
 //|  GoDiff - 1.0.0                                                                                                    |
 //|                                                                                                                    |
+//|   | Search for a project                                                                                       |   |
+//|                                                                                                                    |
 //|   - Projects - 2 -----------------------------------------------------------------------------------------------   |
-//|   |                                  				                                                    	   |   |
-//|   |  Project name                                 	                                                    	   |   |
-//|   |    Short project description                   	                                                    	   |   |
-//|   |                                  				                                                    	   |   |
-//|   |  Project name                                 	                                                    	   |   |
-//|   |    Short project description                   	                                                    	   |   |
-//|   |                                  				                                                    	   |   |
+//|   |                                  				                                                    	             |   |
+//|   |  Project name                                 	                                                    	     |   |
+//|   |    Short project description                   	                                                    	     |   |
+//|   |                                  				                                                    	             |   |
+//|   |  Project name                                 	                                                    	     |   |
+//|   |    Short project description                   	                                                    	     |   |
+//|   |                                  				                                                    	             |   |
 //|   --------------------------------------------------------------------------------------------------------------   |
 //|                                                                                                                    |
 //| up/down select project ^n new project ^o commands enter - load                                                     |
@@ -134,7 +135,7 @@ func (m model) View() string {
 //|  GoDiff - 1.0.0                                                                                                    |
 //|                                                                                                                    |
 //|   |-----------------------------------------------------|    |-------------------------------------------------|   |
-//|   | GET | http://some-service.dev/                |  	|    | GET | http://some-service.dev/            |     |   |
+//|   | GET | http://some-service.dev/                 |  	|    | GET | http://some-service.dev/            |     |   |
 //|   |-----------------------------------------------------|    |-------------------------------------------------|   |
 //|                                                                                                                    |
 //|   |-----------------------------------------------------|    |-------------------------------------------------|   |
