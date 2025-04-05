@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"godiff/components/ItemList"
 	"godiff/components/Router"
+	"godiff/components/ShortcutsPanel"
+	"godiff/components/TitlePanel"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,12 +22,16 @@ const (
 )
 
 type LandingPageModel struct {
-	width    int
-	height   int
-	state    LandingPageState
-	itemList ItemList.Model
-	cursor   int
-	selected int
+	width                   int
+	height                  int
+	state                   LandingPageState
+	itemList                ItemList.Model
+	titlePanel              *TitlePanel.Model
+	shortcutsPanel          *ShortcutsPanel.Model
+	basicShortcuts          []string
+	onProjectSelectShortcus []string
+	cursor                  int
+	selected                int
 }
 
 type SelectedProject int
@@ -45,9 +51,30 @@ func (p RenderableProject) Description() string {
 func NewLandingPage() LandingPageModel {
 	itemRender := ItemList.NewDefaultItemRenderer()
 	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1)
+	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
+
+	basicShortcus := []string{
+		"^Q - Quit",
+		"^O - Jump focus",
+	}
+
+	onProjectSelectShortcus := []string{
+		"^Q - Quit",
+		"Enter - Launch project",
+		"^O - Jump focus",
+	}
+
+	shortcutsPanel := ShortcutsPanel.New(
+		ShortcutsPanel.WithShortcuts(basicShortcus),
+	)
+
 	return LandingPageModel{
-		itemList: itemList,
-		selected: -1,
+		itemList:                itemList,
+		titlePanel:              titlePanel,
+		shortcutsPanel:          shortcutsPanel,
+		basicShortcuts:          basicShortcus,
+		onProjectSelectShortcus: onProjectSelectShortcus,
+		selected:                -1,
 	}
 }
 
@@ -98,13 +125,15 @@ func (m LandingPageModel) View() string {
 	windowContainer := lipgloss.NewStyle().Width(m.width).Height(m.height)
 	doc := strings.Builder{}
 
-	title := lipgloss.NewStyle().PaddingLeft(2).Render("GoDiff - 1.0.0")
+	title := m.titlePanel.View()
 	quitText := lipgloss.NewStyle().PaddingRight(2).Render("Press Q to quit")
 	middleSpacer := lipgloss.NewStyle().Width(m.width - lipgloss.Width(title) - lipgloss.Width(quitText)).Render("")
-
-	doc.WriteString(lipgloss.NewStyle().PaddingTop(1).PaddingBottom(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText)))
+	renderedTitle := lipgloss.NewStyle().PaddingTop(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText))
+	doc.WriteString(renderedTitle)
 	doc.WriteString(m.itemList.View())
 
+	doc.WriteString("\n")
+	doc.WriteString(m.shortcutsPanel.View())
 	return windowContainer.Render(doc.String())
 }
 

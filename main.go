@@ -53,7 +53,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.size = msg
 		for key, view := range m.router.GetViews() {
-			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height - 1})
+			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height})
 			m.router.UpdateRoute(key, viewModel)
 		}
 		return m, nil

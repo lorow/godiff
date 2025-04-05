@@ -1,8 +1,9 @@
 package components
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // I know I should have used bubbles text input component here
