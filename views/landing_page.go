@@ -30,8 +30,8 @@ type LandingPageModel struct {
 	itemList                ItemList.Model
 	titlePanel              *TitlePanel.Model
 	shortcutsPanel          *ShortcutsPanel.Model
-	basicShortcuts          []string
-	onProjectSelectShortcus []string
+	basicShortcuts          []ShortcutsPanel.Shortcut
+	onProjectSelectShortcus []ShortcutsPanel.Shortcut
 	cursor                  int
 	selected                int
 }
@@ -55,15 +55,15 @@ func NewLandingPage() LandingPageModel {
 	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1)
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
-	basicShortcus := []string{
-		"^Q - Quit",
-		"^O - Jump focus",
+	basicShortcus := []ShortcutsPanel.Shortcut{
+		{Key: "^Q", Description: "Quit"},
+		{Key: "^O", Description: "Jump focus"},
 	}
 
-	onProjectSelectShortcus := []string{
-		"^Q - Quit",
-		"Enter - Launch project",
-		"^O - Jump focus",
+	onProjectSelectShortcus := []ShortcutsPanel.Shortcut{
+		{Key: "^Q", Description: "Quit"},
+		{Key: "Enter", Description: "Launch project"},
+		{Key: "^O", Description: "Jump focus"},
 	}
 
 	shortcutsPanel := ShortcutsPanel.New(
@@ -98,7 +98,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 
 		m.itemList.SetWidth(msg.Width - 3)
-		m.itemList.SetHeight(msg.Height - 6)
+		m.itemList.SetHeight(msg.Height - 10)
 		m.shortcutsPanel.SetWidth(msg.Width)
 
 		return m, nil

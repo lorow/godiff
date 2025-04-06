@@ -2,16 +2,20 @@ package ShortcutsPanel
 
 import "github.com/charmbracelet/lipgloss"
 
+type Shortcut struct {
+	Key         string
+	Description string
+}
 type Model struct {
 	width     int
 	styles    Styles
-	shortcuts []string
+	shortcuts []Shortcut
 }
 
 func New(ops ...func(*Model)) *Model {
 	model := &Model{
 		styles:    DefaultStyles(),
-		shortcuts: []string{},
+		shortcuts: []Shortcut{},
 	}
 
 	for _, op := range ops {
@@ -27,7 +31,7 @@ func WithStyles(styles Styles) func(model *Model) {
 	}
 }
 
-func WithShortcuts(shortcuts []string) func(model *Model) {
+func WithShortcuts(shortcuts []Shortcut) func(model *Model) {
 	return func(model *Model) {
 		model.shortcuts = shortcuts
 	}
@@ -50,15 +54,18 @@ func (m Model) GetWidth() int {
 func (m Model) View() string {
 	renderedShortcuts := []string{}
 	for _, shortcut := range m.shortcuts {
-		renderedShortcuts = append(renderedShortcuts, m.styles.Shortcut.Render(shortcut))
+		keyRendered := m.styles.ShortcutKey.Render(shortcut.Key)
+		descriptionRendered := m.styles.ShortcutDescription.Render(shortcut.Description)
+		shortcutRendered := m.styles.ShortcutContainer.Render(lipgloss.JoinHorizontal(lipgloss.Top, keyRendered, " - ", descriptionRendered))
+		renderedShortcuts = append(renderedShortcuts, shortcutRendered)
 	}
 
 	shortcutsBar := m.styles.Container.Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedShortcuts...))
-	filler := m.styles.Container.Background(lipgloss.Color("#E06C75")).Width(m.width - lipgloss.Width(shortcutsBar)).Render(" ")
+	filler := m.styles.Container.Width(m.width - lipgloss.Width(shortcutsBar)).Render(" ")
 
 	return lipgloss.JoinHorizontal(lipgloss.Top, shortcutsBar, filler)
 }
 
-func (m *Model) SetShortcuts(shortcuts []string) {
+func (m *Model) SetShortcuts(shortcuts []Shortcut) {
 	m.shortcuts = shortcuts
 }

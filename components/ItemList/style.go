@@ -12,6 +12,7 @@ type Styles struct {
 
 func DefaultStyles() (s Styles) {
 	s.Container = lipgloss.NewStyle().
+		Background(lipgloss.Color("#282c34")).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("62")).
 		PaddingRight(2)
