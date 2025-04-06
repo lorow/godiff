@@ -1,4 +1,4 @@
-package main
+package views
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"godiff/components/Router"
 	"godiff/components/ShortcutsPanel"
 	"godiff/components/TitlePanel"
+	"godiff/db"
+	"godiff/messages"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -37,11 +39,11 @@ type LandingPageModel struct {
 type SelectedProject int
 
 type RenderableProject struct {
-	Project
+	db.Project
 }
 
 func (p RenderableProject) Title() string {
-	return fmt.Sprintf("%d - %s", p.Project.id, p.Project.name)
+	return fmt.Sprintf("%d - %s", p.Project.ID, p.Project.Name)
 }
 
 func (p RenderableProject) Description() string {
@@ -91,12 +93,12 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// we need to first handle the incoming messages
 	// only then we can send our own IO commands
 	switch msg := msg.(type) {
-	case SetNewSizeMsg:
-		m.width = msg.width
-		m.height = msg.height
+	case messages.SetNewSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 
-		m.itemList.SetWidth(msg.width - 3)
-		m.itemList.SetHeight(msg.height - 6)
+		m.itemList.SetWidth(msg.Width - 3)
+		m.itemList.SetHeight(msg.Height - 6)
 
 		return m, nil
 	case LoadedProjectsMsg:
@@ -114,7 +116,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			m.selected = m.cursor
 			currentSelection, _ := m.itemList.GetCurrentSelection()
-			return m, Router.RouteTo("editor", SelectedProject(currentSelection.(Project).id))
+			return m, Router.RouteTo("editor", SelectedProject(currentSelection.(db.Project).ID))
 		}
 	}
 
@@ -145,7 +147,7 @@ func LoadProjectsCmd(limit, offset int) tea.Cmd {
 	return func() tea.Msg {
 		var projects []ItemList.Item
 
-		for _, project := range GetProjects(limit, offset) {
+		for _, project := range db.GetProjects(limit, offset) {
 			projects = append(projects, RenderableProject{project})
 		}
 

@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"godiff/components/Router"
+	"godiff/db"
+	"godiff/messages"
+	"godiff/views"
 	"io"
 	"os"
 	"strings"
@@ -13,10 +16,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-type SetNewSizeMsg struct {
-	width, height int
-}
-
 type model struct {
 	size   tea.WindowSizeMsg
 	logs   io.Writer
@@ -25,7 +24,7 @@ type model struct {
 
 func newInitialModel(logs_file io.Writer) model {
 	view_router := Router.New(
-		Router.WithStartingPage(NewLandingPage()),
+		Router.WithStartingPage(views.NewLandingPage()),
 	)
 
 	return model{
@@ -53,7 +52,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.size = msg
 		for key, view := range m.router.GetViews() {
-			viewModel, _ := view.Update(SetNewSizeMsg{width: msg.Width, height: msg.Height})
+			viewModel, _ := view.Update(messages.SetNewSizeMsg{Width: msg.Width, Height: msg.Height})
 			m.router.UpdateRoute(key, viewModel)
 		}
 		return m, nil
@@ -72,7 +71,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height)
+	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height).Background(BackgroundColor)
 	doc := strings.Builder{}
 
 	currentView := m.router.GetCurrentVIew()
@@ -181,13 +180,13 @@ func main() {
 	}
 
 	var err error
-	err = InitDatabase()
+	err = db.InitDatabase()
 	if err != nil {
 		fmt.Printf("Something went wrong while trying to open the database: %v \n", err)
 		os.Exit(1)
 	}
 
-	err = MigrateDatabase()
+	err = db.MigrateDatabase()
 	if err != nil {
 		fmt.Printf("Something went wrong while trying to migrate the database: %v \n", err)
 		os.Exit(1)
