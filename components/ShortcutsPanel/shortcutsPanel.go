@@ -56,7 +56,7 @@ func (m Model) View() string {
 	for _, shortcut := range m.shortcuts {
 		keyRendered := m.styles.ShortcutKey.Render(shortcut.Key)
 		descriptionRendered := m.styles.ShortcutDescription.Render(shortcut.Description)
-		shortcutRendered := m.styles.ShortcutContainer.Render(lipgloss.JoinHorizontal(lipgloss.Top, keyRendered, " - ", descriptionRendered))
+		shortcutRendered := m.styles.ShortcutContainer.Render(lipgloss.JoinHorizontal(lipgloss.Top, keyRendered, m.styles.Container.Render(" - "), descriptionRendered))
 		renderedShortcuts = append(renderedShortcuts, shortcutRendered)
 	}
 
