@@ -10,8 +10,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
-
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
 )
@@ -71,7 +69,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	appDocument := lipgloss.NewStyle().Width(m.size.Width).Height(m.size.Height).Background(BackgroundColor)
+	appDocument := docStyle.Background(BackgroundColor)
 	doc := strings.Builder{}
 
 	currentView := m.router.GetCurrentVIew()
