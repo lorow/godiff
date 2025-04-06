@@ -8,7 +8,7 @@ type Styles struct {
 }
 
 func DefaultStyles() (s Styles) {
-	s.Container = lipgloss.NewStyle().PaddingRight(2)
+	s.Container = lipgloss.NewStyle()
 	s.Shortcut = lipgloss.NewStyle().PaddingLeft(5)
 
 	return s

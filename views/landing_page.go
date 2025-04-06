@@ -67,7 +67,7 @@ func NewLandingPage() LandingPageModel {
 	}
 
 	shortcutsPanel := ShortcutsPanel.New(
-		ShortcutsPanel.WithShortcuts(basicShortcus),
+		ShortcutsPanel.WithShortcuts(onProjectSelectShortcus),
 	)
 
 	return LandingPageModel{
@@ -99,6 +99,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.itemList.SetWidth(msg.Width - 3)
 		m.itemList.SetHeight(msg.Height - 6)
+		m.shortcutsPanel.SetWidth(msg.Width)
 
 		return m, nil
 	case LoadedProjectsMsg:
@@ -131,11 +132,16 @@ func (m LandingPageModel) View() string {
 	quitText := lipgloss.NewStyle().PaddingRight(2).Render("Press Q to quit")
 	middleSpacer := lipgloss.NewStyle().Width(m.width - lipgloss.Width(title) - lipgloss.Width(quitText)).Render("")
 	renderedTitle := lipgloss.NewStyle().PaddingTop(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText))
-	doc.WriteString(renderedTitle)
-	doc.WriteString(m.itemList.View())
 
-	doc.WriteString("\n")
-	doc.WriteString(m.shortcutsPanel.View())
+	doc.WriteString(
+		lipgloss.JoinVertical(
+			lipgloss.Top,
+			renderedTitle,
+			m.itemList.View(),
+			m.shortcutsPanel.View(),
+		),
+	)
+
 	return windowContainer.Render(doc.String())
 }
 

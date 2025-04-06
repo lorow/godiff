@@ -3,6 +3,7 @@ package ShortcutsPanel
 import "github.com/charmbracelet/lipgloss"
 
 type Model struct {
+	width     int
 	styles    Styles
 	shortcuts []string
 }
@@ -32,17 +33,30 @@ func WithShortcuts(shortcuts []string) func(model *Model) {
 	}
 }
 
+func WithWidth(width int) func(model *Model) {
+	return func(model *Model) {
+		model.width = width
+	}
+}
+
+func (m *Model) SetWidth(width int) {
+	m.width = width
+}
+
+func (m Model) GetWidth() int {
+	return m.width
+}
+
 func (m Model) View() string {
-
-	// generally, we might want to implement wordbreak
-	// buut this might be a bit overkill for now
-
 	renderedShortcuts := []string{}
 	for _, shortcut := range m.shortcuts {
 		renderedShortcuts = append(renderedShortcuts, m.styles.Shortcut.Render(shortcut))
 	}
 
-	return m.styles.Container.Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedShortcuts...))
+	shortcutsBar := m.styles.Container.Render(lipgloss.JoinHorizontal(lipgloss.Top, renderedShortcuts...))
+	filler := m.styles.Container.Background(lipgloss.Color("#E06C75")).Width(m.width - lipgloss.Width(shortcutsBar)).Render(" ")
+
+	return lipgloss.JoinHorizontal(lipgloss.Top, shortcutsBar, filler)
 }
 
 func (m *Model) SetShortcuts(shortcuts []string) {

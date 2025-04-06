@@ -1,6 +1,6 @@
 // change of plans, the command bar will have a different role all together
 
-package main
+package CommandBar
 
 //
 //import (
