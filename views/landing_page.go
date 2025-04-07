@@ -5,6 +5,7 @@ import (
 	"godiff/components/ItemList"
 	"godiff/components/Router"
 	"godiff/components/ShortcutsPanel"
+	"godiff/components/TextInput"
 	"godiff/components/TitlePanel"
 	"godiff/db"
 	"godiff/messages"
@@ -28,12 +29,14 @@ type LandingPageModel struct {
 	height                  int
 	state                   LandingPageState
 	itemList                ItemList.Model
+	searchInput             TextInput.Model
 	titlePanel              *TitlePanel.Model
 	shortcutsPanel          *ShortcutsPanel.Model
 	basicShortcuts          []ShortcutsPanel.Shortcut
 	onProjectSelectShortcus []ShortcutsPanel.Shortcut
 	cursor                  int
 	selected                int
+	currentFocus            string
 }
 
 type SelectedProject int
@@ -73,9 +76,11 @@ func NewLandingPage() LandingPageModel {
 	return LandingPageModel{
 		itemList:                itemList,
 		titlePanel:              titlePanel,
+		searchInput:             TextInput.NewTextInput(),
 		shortcutsPanel:          shortcutsPanel,
 		basicShortcuts:          basicShortcus,
 		onProjectSelectShortcus: onProjectSelectShortcus,
+		currentFocus:            "search",
 		selected:                -1,
 	}
 }
@@ -106,9 +111,32 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = LoadedProjects
 		m.itemList.SetItems([]ItemList.Item(msg.projects))
 		m.itemList.SetTitle(fmt.Sprintf("Projects - %d", m.itemList.GetItemsCount()))
+	case messages.SwtichFocusMsg:
+		m.currentFocus = msg.Target
+		return m, nil
+		// todo handle focus indication here
+	}
+
+	if m.currentFocus == "search" {
+		return m.handleSearch(msg)
+	}
+
+	if m.currentFocus == "project_list" {
+		return m.handleProjectList(msg)
+	}
+
+	return m, nil
+}
+
+func (m LandingPageModel) handleProjectList(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "up":
+			if m.itemList.IsCursorAtTheTop() {
+				return m, messages.SwtichFocusCmd("search")
+			}
+
 			m.itemList.CursorUp()
 			return m, nil
 		case "down":
@@ -124,6 +152,20 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m LandingPageModel) handleSearch(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "down":
+			return m, messages.SwtichFocusCmd("project_list")
+		}
+	}
+
+	// todo handle search here
+
+	return m, nil
+}
+
 func (m LandingPageModel) View() string {
 	windowContainer := lipgloss.NewStyle().Width(m.width).Height(m.height)
 	doc := strings.Builder{}
@@ -131,12 +173,16 @@ func (m LandingPageModel) View() string {
 	title := m.titlePanel.View()
 	quitText := lipgloss.NewStyle().PaddingRight(2).Render("Press Q to quit")
 	middleSpacer := lipgloss.NewStyle().Width(m.width - lipgloss.Width(title) - lipgloss.Width(quitText)).Render("")
-	renderedTitle := lipgloss.NewStyle().PaddingTop(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText))
+	renderedTitle := lipgloss.NewStyle().PaddingTop(1).PaddingBottom(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText))
+	searchInputView := m.searchInput.View()
+	//                                                     BTW with this (RoundedBorder) I can make my own border with like a title
+	inputPanelThing := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).MarginLeft(1).MarginRight(1).PaddingLeft(1).Width(m.width - 4).Render(searchInputView)
 
 	doc.WriteString(
 		lipgloss.JoinVertical(
 			lipgloss.Top,
 			renderedTitle,
+			inputPanelThing,
 			m.itemList.View(),
 			m.shortcutsPanel.View(),
 		),
