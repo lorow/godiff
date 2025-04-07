@@ -1,4 +1,4 @@
-package components
+package Cursor
 
 import (
 	"context"
@@ -32,7 +32,7 @@ const (
 	CursorHide
 )
 
-type CursorModel struct {
+type Model struct {
 	cursorStyle lipgloss.Style
 	textStyle   lipgloss.Style
 	mode        CursorMode
@@ -44,8 +44,8 @@ type CursorModel struct {
 	blinkCtx    *cursorBlinkCtx
 }
 
-func NewCursorModel() CursorModel {
-	cursorModel := CursorModel{
+func NewCursorModel() Model {
+	cursorModel := Model{
 		id:         lastId,
 		mode:       CursorBlink,
 		blinkSpeed: time.Millisecond * 500,
@@ -60,7 +60,7 @@ func NewCursorModel() CursorModel {
 	return cursorModel
 }
 
-func (m CursorModel) Update(msg tea.Msg) (CursorModel, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case InitCursorBlinkMsg:
 		if m.mode != CursorBlink || !m.focus {
@@ -93,14 +93,14 @@ func (m CursorModel) Update(msg tea.Msg) (CursorModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m CursorModel) View() string {
+func (m Model) View() string {
 	if m.blink {
 		return m.textStyle.Inline(true).Render(m.char)
 	}
 	return m.cursorStyle.Inline(true).Reverse(true).Render(m.char)
 }
 
-func (m *CursorModel) SetMode(mode CursorMode) tea.Cmd {
+func (m *Model) SetMode(mode CursorMode) tea.Cmd {
 	if mode < CursorBlink || mode > CursorHide {
 		return nil
 	}
@@ -115,23 +115,23 @@ func (m *CursorModel) SetMode(mode CursorMode) tea.Cmd {
 	return nil
 }
 
-func (m CursorModel) Mode() CursorMode {
+func (m Model) Mode() CursorMode {
 	return m.mode
 }
 
-func (m *CursorModel) TurnBlinkOff() {
+func (m *Model) TurnBlinkOff() {
 	m.blink = false
 }
 
-func (m *CursorModel) SetChar(char string) {
+func (m *Model) SetChar(char string) {
 	m.char = char
 }
 
-func (m *CursorModel) Focus() {
+func (m *Model) Focus() {
 	m.focus = true
 }
 
-func (m *CursorModel) Blur() {
+func (m *Model) Blur() {
 	m.focus = false
 }
 
@@ -140,7 +140,7 @@ func BlinkCursor() tea.Msg {
 }
 
 // todo refactor this to use tea commands instead of channels
-func (m *CursorModel) BlinkCmd() tea.Cmd {
+func (m *Model) BlinkCmd() tea.Cmd {
 	if m.mode != CursorBlink {
 		return nil
 	}

@@ -1,6 +1,7 @@
-package components
+package TextInput
 
 import (
+	"godiff/components/Cursor"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,31 +14,31 @@ type CursorPosition struct {
 	X int
 }
 
-type TextInputModel struct {
+type Model struct {
 	focused        bool
 	prompt         string
 	inputText      []rune
-	cursor         CursorModel
+	cursor         Cursor.Model
 	cursorPosition CursorPosition
 	width          int
 }
 
-func NewTextInput() TextInputModel {
-	return TextInputModel{
+func NewTextInput() Model {
+	return Model{
 		focused:        false,
 		prompt:         ">",
-		cursor:         NewCursorModel(),
+		cursor:         Cursor.NewCursorModel(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
 		width:          0,
 	}
 }
 
-func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	// todo add keymaps
 
 	// check if we should initialize blinking
-	if initMsg, ok := msg.(InitCursorBlinkMsg); ok {
+	if initMsg, ok := msg.(Cursor.InitCursorBlinkMsg); ok {
 		var cmd tea.Cmd
 		m.cursor.Focus()
 		m.cursor, cmd = m.cursor.Update(initMsg)
@@ -75,14 +76,14 @@ func (m TextInputModel) Update(msg tea.Msg) (TextInputModel, tea.Cmd) {
 	m.cursor, cmd = m.cursor.Update(msg)
 	cmds = append(cmds, cmd)
 
-	if m.cursor.Mode() == CursorBlink {
+	if m.cursor.Mode() == Cursor.CursorBlink {
 		cmds = append(cmds, m.cursor.BlinkCmd())
 	}
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m TextInputModel) View() string {
+func (m Model) View() string {
 	v := strings.Builder{}
 	inputTextLength := len(m.inputText)
 
@@ -110,7 +111,7 @@ func (m TextInputModel) View() string {
 	return v.String()
 }
 
-func (m *TextInputModel) DeleteCharBackwards() {
+func (m *Model) DeleteCharBackwards() {
 	head := m.inputText[:max(0, m.cursorPosition.X-2)]
 	tail := m.inputText[m.cursorPosition.X-1:]
 
@@ -121,7 +122,7 @@ func (m *TextInputModel) DeleteCharBackwards() {
 	m.inputText = append(head, tail...)
 }
 
-func (m *TextInputModel) insertRuneFromUserInput(values []rune) {
+func (m *Model) insertRuneFromUserInput(values []rune) {
 	head := m.inputText[:m.cursorPosition.X-1]
 	tail := m.inputText[m.cursorPosition.X-1:]
 
@@ -133,29 +134,29 @@ func (m *TextInputModel) insertRuneFromUserInput(values []rune) {
 	m.inputText = append(head, tail...)
 }
 
-func (m *TextInputModel) setWidth(width int) {
+func (m *Model) SetWidth(width int) {
 	m.width = width
 }
 
-func (m *TextInputModel) Reset() {
+func (m *Model) Reset() {
 	m.cursorPosition.X = 1
 	m.inputText = make([]rune, 0)
 }
 
-func (m *TextInputModel) Focus() {
+func (m *Model) Focus() {
 	m.cursor.Focus()
 	m.focused = true
 }
 
-func (m TextInputModel) Focused() bool {
+func (m Model) Focused() bool {
 	return m.focused
 }
 
-func (m *TextInputModel) Blur() {
+func (m *Model) Blur() {
 	m.cursor.Blur()
 	m.focused = false
 }
 
 func TextInputBlink() tea.Msg {
-	return BlinkCursor()
+	return Cursor.BlinkCursor()
 }
