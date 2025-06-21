@@ -6,10 +6,10 @@ type SetNewSizeMsg struct {
 	Width, Height int
 }
 
-type SwtichFocusMsg struct {
+type SwitchFocusMsg struct {
 	Target string
 }
 
-func SwtichFocusCmd(target string) tea.Cmd {
-	return func() tea.Msg { return SwtichFocusMsg{Target: target} }
+func SwitchFocusCmd(target string) tea.Cmd {
+	return func() tea.Msg { return SwitchFocusMsg{Target: target} }
 }

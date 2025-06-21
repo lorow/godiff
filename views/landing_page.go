@@ -25,18 +25,18 @@ const (
 )
 
 type LandingPageModel struct {
-	width                   int
-	height                  int
-	state                   LandingPageState
-	itemList                ItemList.Model
-	searchInput             TextInput.Model
-	titlePanel              *TitlePanel.Model
-	shortcutsPanel          *ShortcutsPanel.Model
-	basicShortcuts          []ShortcutsPanel.Shortcut
-	onProjectSelectShortcus []ShortcutsPanel.Shortcut
-	cursor                  int
-	selected                int
-	currentFocus            string
+	width                    int
+	height                   int
+	state                    LandingPageState
+	itemList                 ItemList.Model
+	searchInput              TextInput.Model
+	titlePanel               *TitlePanel.Model
+	shortcutsPanel           *ShortcutsPanel.Model
+	basicShortcuts           []ShortcutsPanel.Shortcut
+	onProjectSelectShortcuts []ShortcutsPanel.Shortcut
+	cursor                   int
+	selected                 int
+	currentFocus             string
 }
 
 type SelectedProject int
@@ -58,30 +58,30 @@ func NewLandingPage() LandingPageModel {
 	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1)
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
-	basicShortcus := []ShortcutsPanel.Shortcut{
+	basicShortcuts := []ShortcutsPanel.Shortcut{
 		{Key: "^Q", Description: "Quit"},
 		{Key: "^O", Description: "Jump focus"},
 	}
 
-	onProjectSelectShortcus := []ShortcutsPanel.Shortcut{
+	onProjectSelectShortcuts := []ShortcutsPanel.Shortcut{
 		{Key: "^Q", Description: "Quit"},
 		{Key: "Enter", Description: "Launch project"},
 		{Key: "^O", Description: "Jump focus"},
 	}
 
 	shortcutsPanel := ShortcutsPanel.New(
-		ShortcutsPanel.WithShortcuts(onProjectSelectShortcus),
+		ShortcutsPanel.WithShortcuts(onProjectSelectShortcuts),
 	)
 
 	return LandingPageModel{
-		itemList:                itemList,
-		titlePanel:              titlePanel,
-		searchInput:             TextInput.NewTextInput(),
-		shortcutsPanel:          shortcutsPanel,
-		basicShortcuts:          basicShortcus,
-		onProjectSelectShortcus: onProjectSelectShortcus,
-		currentFocus:            "search",
-		selected:                -1,
+		itemList:                 itemList,
+		titlePanel:               titlePanel,
+		searchInput:              TextInput.NewTextInput(),
+		shortcutsPanel:           shortcutsPanel,
+		basicShortcuts:           basicShortcuts,
+		onProjectSelectShortcuts: onProjectSelectShortcuts,
+		currentFocus:             "search",
+		selected:                 -1,
 	}
 }
 
@@ -111,8 +111,21 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = LoadedProjects
 		m.itemList.SetItems([]ItemList.Item(msg.projects))
 		m.itemList.SetTitle(fmt.Sprintf("Projects - %d", m.itemList.GetItemsCount()))
-	case messages.SwtichFocusMsg:
+
+	case messages.SwitchFocusMsg:
 		m.currentFocus = msg.Target
+		switch msg.Target {
+		case "search":
+			m.searchInput.Focus()
+			m.itemList.Blur()
+			m.shortcutsPanel.SetShortcuts(m.basicShortcuts)
+
+		case "project_list":
+			m.searchInput.Blur()
+			m.shortcutsPanel.SetShortcuts(m.onProjectSelectShortcuts)
+			m.itemList.Focus()
+		}
+
 		return m, nil
 		// todo handle focus indication here
 	}
@@ -134,7 +147,7 @@ func (m LandingPageModel) handleProjectList(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "up":
 			if m.itemList.IsCursorAtTheTop() {
-				return m, messages.SwtichFocusCmd("search")
+				return m, messages.SwitchFocusCmd("search")
 			}
 
 			m.itemList.CursorUp()
@@ -157,7 +170,7 @@ func (m LandingPageModel) handleSearch(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "down":
-			return m, messages.SwtichFocusCmd("project_list")
+			return m, messages.SwitchFocusCmd("project_list")
 		}
 	}
 
