@@ -32,7 +32,7 @@ func WithItem(item Focusable) func(chain *FocusChain) {
 	}
 }
 
-func (chain *FocusChain) GetCurrentlyFocused() Focusable {
+func (chain *FocusChain) GetCurrentlySelected() Focusable {
 	return chain.chain[chain.index]
 }
 
