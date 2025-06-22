@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"godiff/components/FocusChain"
 	"godiff/components/ItemList"
 	"godiff/components/Router"
 	"godiff/components/ShortcutsPanel"
@@ -28,15 +29,13 @@ type LandingPageModel struct {
 	width                    int
 	height                   int
 	state                    LandingPageState
-	itemList                 ItemList.Model
-	searchInput              TextInput.Model
+	searchInput              *TextInput.Model
+	itemList                 *ItemList.Model
 	titlePanel               *TitlePanel.Model
 	shortcutsPanel           *ShortcutsPanel.Model
 	basicShortcuts           []ShortcutsPanel.Shortcut
 	onProjectSelectShortcuts []ShortcutsPanel.Shortcut
-	cursor                   int
-	selected                 int
-	currentFocus             string
+	focusChain               *FocusChain.Model
 }
 
 type SelectedProject int
@@ -54,8 +53,11 @@ func (p RenderableProject) Description() string {
 }
 
 func NewLandingPage() LandingPageModel {
+	searchInput := TextInput.New()
+	searchInput.Focus()
+
 	itemRender := ItemList.NewDefaultItemRenderer()
-	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1)
+	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1, onItemListSelect)
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
 	basicShortcuts := []ShortcutsPanel.Shortcut{
@@ -73,15 +75,16 @@ func NewLandingPage() LandingPageModel {
 		ShortcutsPanel.WithShortcuts(onProjectSelectShortcuts),
 	)
 
+	focusChain := FocusChain.New(FocusChain.WithItem(searchInput), FocusChain.WithItem(&itemList))
+
 	return LandingPageModel{
-		itemList:                 itemList,
+		searchInput:              searchInput,
+		itemList:                 &itemList,
 		titlePanel:               titlePanel,
-		searchInput:              TextInput.NewTextInput(),
 		shortcutsPanel:           shortcutsPanel,
 		basicShortcuts:           basicShortcuts,
 		onProjectSelectShortcuts: onProjectSelectShortcuts,
-		currentFocus:             "search",
-		selected:                 -1,
+		focusChain:               focusChain,
 	}
 }
 
@@ -101,7 +104,6 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.SetNewSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-
 		m.itemList.SetWidth(msg.Width - 3)
 		m.itemList.SetHeight(msg.Height - 10)
 		m.shortcutsPanel.SetWidth(msg.Width)
@@ -112,67 +114,42 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.itemList.SetItems([]ItemList.Item(msg.projects))
 		m.itemList.SetTitle(fmt.Sprintf("Projects - %d", m.itemList.GetItemsCount()))
 
-	case messages.SwitchFocusMsg:
-		m.currentFocus = msg.Target
-		switch msg.Target {
-		case "search":
-			m.searchInput.Focus()
-			m.itemList.Blur()
-			m.shortcutsPanel.SetShortcuts(m.basicShortcuts)
-
-		case "project_list":
-			m.searchInput.Blur()
-			m.shortcutsPanel.SetShortcuts(m.onProjectSelectShortcuts)
-			m.itemList.Focus()
+	case FocusChain.SwitchFocusMsg:
+		if msg.Direction == FocusChain.FocusUp {
+			m.focusChain.Previous()
 		}
 
-		return m, nil
-		// todo handle focus indication here
+		if msg.Direction == FocusChain.FocusDown {
+			m.focusChain.Next()
+		}
 	}
 
-	if m.currentFocus == "search" {
-		return m.handleSearch(msg)
+	currentlySelected := m.focusChain.GetCurrentlySelected()
+
+	if currentlySelected == m.searchInput {
+		m.shortcutsPanel.SetShortcuts(m.basicShortcuts)
 	}
 
-	if m.currentFocus == "project_list" {
-		return m.handleProjectList(msg)
+	if currentlySelected == m.itemList {
+		m.shortcutsPanel.SetShortcuts(m.onProjectSelectShortcuts)
 	}
 
-	return m, nil
+	result := currentlySelected.Update(msg)
+	return m, result
 }
 
-func (m LandingPageModel) handleProjectList(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "up":
-			if m.itemList.IsCursorAtTheTop() {
-				return m, messages.SwitchFocusCmd("search")
-			}
-
-			m.itemList.CursorUp()
-			return m, nil
-		case "down":
-			m.itemList.CursorDown()
-			return m, nil
-		case "enter":
-			m.selected = m.cursor
-			currentSelection, _ := m.itemList.GetCurrentSelection()
-			return m, Router.RouteTo("editor", SelectedProject(currentSelection.(db.Project).ID))
-		}
-	}
-
-	return m, nil
+func onItemListSelect(item ItemList.Item) tea.Cmd {
+	return Router.RouteTo("editor", SelectedProject(item.(RenderableProject).ID))
 }
 
 func (m LandingPageModel) handleSearch(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "down":
-			return m, messages.SwitchFocusCmd("project_list")
-		}
-	}
+	// switch msg := msg.(type) {
+	// case tea.KeyMsg:
+	// 	switch msg.String() {
+	// 	case "down":
+	// 		return m, messages.SwitchFocusCmd("project_list")
+	// 	}
+	// }
 
 	// todo handle search here
 

@@ -1,6 +1,10 @@
 package FocusChain
 
-import "testing"
+import (
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+)
 
 type FocusableTestItem struct {
 	isFocused bool
@@ -14,15 +18,7 @@ func (f *FocusableTestItem) Blur() {
 	f.isFocused = false
 }
 
-func (f FocusableTestItem) HasFocusChain() bool {
-	return false
-}
-
-func (f FocusableTestItem) HandleNext() *ReachedFocusChainLimit {
-	return nil
-}
-
-func (f FocusableTestItem) HandlePrevious() *ReachedFocusChainLimit {
+func (f *FocusableTestItem) Update(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
@@ -60,7 +56,7 @@ func TestMovingFocusBackwards(t *testing.T) {
 	focusChain := New(WithItem(firstItem), WithItem(secondItem))
 
 	if focusChain.GetCurrentlySelected() != firstItem {
-		t.Errorf("Expected firstItem to be focused, but got %v", focusChain.GetCurrentlySelected())
+		t.Errorf("Expected firstItem to be currently selected, but got %v", focusChain.GetCurrentlySelected())
 	}
 
 	if !firstItem.isFocused {
@@ -83,7 +79,7 @@ func TestMovingFocusBackwards(t *testing.T) {
 		t.Errorf("Expected firstItem to be focused, but got %v", focusChain.GetCurrentlySelected())
 	}
 
-	if !secondItem.isFocused {
+	if !firstItem.isFocused {
 		t.Errorf("Expected firstItem to be focused, but got %v", secondItem.isFocused)
 	}
 

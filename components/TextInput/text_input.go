@@ -2,57 +2,66 @@ package TextInput
 
 import (
 	"godiff/components/Cursor"
+	"godiff/components/FocusChain"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-// I know I should have used bubbles text input component here
-// I just wanted to see how I'd write my own, so I did
 
 type CursorPosition struct {
 	X int
 }
 
 type Model struct {
-	focused        bool
-	prompt         string
-	inputText      []rune
-	cursor         Cursor.Model
+	prompt    string
+	inputText []rune
+	// cursor         Cursor.Model
 	cursorPosition CursorPosition
 	width          int
+	isFocused      bool
 }
 
-func NewTextInput() Model {
-	return Model{
-		focused:        false,
-		prompt:         ">",
-		cursor:         Cursor.NewCursorModel(),
+func New(opts ...func(*Model)) *Model {
+	model := &Model{
+		prompt: ">",
+		// cursor:         Cursor.NewCursorModel(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
 		width:          0,
+		isFocused:      false,
+	}
+
+	for _, opt := range opts {
+		opt(model)
+	}
+
+	return model
+}
+
+func WithPrompt(prompt string) func(model *Model) {
+	return func(model *Model) {
+		model.prompt = prompt
 	}
 }
 
-func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	// todo add keymaps
 
 	// check if we should initialize blinking
-	if initMsg, ok := msg.(Cursor.InitCursorBlinkMsg); ok {
-		var cmd tea.Cmd
-		m.cursor.Focus()
-		m.cursor, cmd = m.cursor.Update(initMsg)
-		m.cursor.Blur()
-		return m, cmd
-	}
-
-	if !m.focused {
-		return m, nil
-	}
+	// if initMsg, ok := msg.(Cursor.InitCursorBlinkMsg); ok {
+	// 	var cmd tea.Cmds
+	// 	// rethink cursor blinking
+	// 	// m.cursor.Focus()
+	// 	// m.cursor, cmd = m.cursor.Update(initMsg)
+	// 	// m.cursor.Blur()
+	// 	return cmd
+	// }
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
+		case tea.KeyDown:
+			return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
 		case tea.KeyBackspace:
 			m.DeleteCharBackwards()
 		case tea.KeyLeft:
@@ -70,17 +79,18 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		}
 	}
 
-	var cmds []tea.Cmd
-	var cmd tea.Cmd
+	// var cmds []tea.Cmd
+	// var cmd tea.Cmd
 
-	m.cursor, cmd = m.cursor.Update(msg)
-	cmds = append(cmds, cmd)
+	// m.cursor, cmd = m.cursor.Update(msg)
+	// cmds = append(cmds, cmd)
 
-	if m.cursor.Mode() == Cursor.CursorBlink {
-		cmds = append(cmds, m.cursor.BlinkCmd())
-	}
+	// if m.cursor.Mode() == Cursor.CursorBlink {
+	// 	cmds = append(cmds, m.cursor.BlinkCmd())
+	// }
 
-	return m, tea.Batch(cmds...)
+	// return tea.Batch(cmds...)
+	return nil
 }
 
 func (m Model) View() string {
@@ -91,21 +101,25 @@ func (m Model) View() string {
 	// so we should grab the char under it
 	// and display it as cursor
 	if m.cursorPosition.X <= inputTextLength {
-		m.cursor.SetChar(string(m.inputText[m.cursorPosition.X-1]))
+		// m.cursor.SetChar(string(m.inputText[m.cursorPosition.X-1]))
 	} else {
-		m.cursor.SetChar("█")
+		// m.cursor.SetChar("█")
 	}
 
 	v.WriteString(m.prompt)
 	v.WriteString(" ")
 
+	if m.isFocused {
+		v.WriteString("Focused")
+	}
+
 	if m.cursorPosition.X > inputTextLength {
 		v.WriteString(string(m.inputText))
-		v.WriteString(m.cursor.View())
+		// v.WriteString(m.cursor.View())
 	} else {
 		offset := max(0, m.cursorPosition.X-1)
 		v.WriteString(string(m.inputText[:offset]))
-		v.WriteString(m.cursor.View())
+		// v.WriteString(m.cursor.View())
 		v.WriteString(string(m.inputText[offset+1:]))
 	}
 	return v.String()
@@ -144,17 +158,13 @@ func (m *Model) Reset() {
 }
 
 func (m *Model) Focus() {
-	m.cursor.Focus()
-	m.focused = true
-}
-
-func (m Model) Focused() bool {
-	return m.focused
+	// m.cursor.Focus()
+	m.isFocused = true
 }
 
 func (m *Model) Blur() {
-	m.cursor.Blur()
-	m.focused = false
+	// m.cursor.Blur()
+	m.isFocused = false
 }
 
 func TextInputBlink() tea.Msg {

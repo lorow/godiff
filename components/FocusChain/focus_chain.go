@@ -1,23 +1,22 @@
 package FocusChain
 
+import tea "github.com/charmbracelet/bubbletea"
+
 type Focusable interface {
 	Focus()
 	Blur()
-	HasFocusChain() bool
-	HandleNext() *ReachedFocusChainLimit
-	HandlePrevious() *ReachedFocusChainLimit
+	Update(msg tea.Msg) tea.Cmd
 }
 
-type ReachedFocusChainLimit struct{}
+type ReachedFocusChainEnd struct{}
 
-// FocusChain stores
-type FocusChain struct {
+type Model struct {
 	index int
 	chain []Focusable
 }
 
-func New(ops ...func(*FocusChain)) *FocusChain {
-	chain := &FocusChain{index: 0, chain: []Focusable{}}
+func New(ops ...func(*Model)) *Model {
+	chain := &Model{index: 0, chain: []Focusable{}}
 
 	for _, op := range ops {
 		op(chain)
@@ -26,65 +25,49 @@ func New(ops ...func(*FocusChain)) *FocusChain {
 	return chain
 }
 
-func WithItem(item Focusable) func(chain *FocusChain) {
-	return func(chain *FocusChain) {
+func WithItem(item Focusable) func(chain *Model) {
+	return func(chain *Model) {
 		chain.chain = append(chain.chain, item)
 	}
 }
 
-func (chain *FocusChain) GetCurrentlySelected() Focusable {
+func (chain *Model) GetCurrentlySelected() Focusable {
 	return chain.chain[chain.index]
 }
 
-func (chain *FocusChain) Next() *ReachedFocusChainLimit {
+func (chain *Model) Next() *ReachedFocusChainEnd {
 
 	if len(chain.chain) == 0 {
-		return &ReachedFocusChainLimit{}
-	}
-
-	currentItem := chain.chain[chain.index]
-
-	if currentItem.HasFocusChain() {
-		result := currentItem.HandleNext()
-		if result != nil {
-			currentItem.Blur()
-		}
+		return &ReachedFocusChainEnd{}
 	}
 
 	if chain.index < len(chain.chain)-1 {
+		chain.chain[chain.index].Blur()
 		chain.index++
 		chain.chain[chain.index].Focus()
 		return nil
 	}
 
-	return &ReachedFocusChainLimit{}
+	return &ReachedFocusChainEnd{}
 }
 
-func (chain *FocusChain) Previous() *ReachedFocusChainLimit {
+func (chain *Model) Previous() *ReachedFocusChainEnd {
 
 	if len(chain.chain) == 0 {
-		return &ReachedFocusChainLimit{}
-	}
-
-	currentItem := chain.chain[chain.index]
-
-	if currentItem.HasFocusChain() {
-		result := currentItem.HandlePrevious()
-		if result != nil {
-			currentItem.Blur()
-		}
+		return &ReachedFocusChainEnd{}
 	}
 
 	if chain.index > 0 {
+		chain.chain[chain.index].Blur()
 		chain.index--
 		chain.chain[chain.index].Focus()
 		return nil
 	}
 
-	return &ReachedFocusChainLimit{}
+	return &ReachedFocusChainEnd{}
 
 }
 
-func (chain *FocusChain) JumpFocus(index string) *ReachedFocusChainLimit {
+func (chain *Model) JumpFocus(index string) *ReachedFocusChainEnd {
 	return nil
 }

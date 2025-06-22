@@ -2,9 +2,11 @@ package ItemList
 
 import (
 	"errors"
+	"godiff/components/FocusChain"
 	"godiff/components/scrollablePaginator"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -31,9 +33,11 @@ type Model struct {
 	items           []Item
 	paginator       scrollablePaginator.Model
 	itemRenderer    ItemRenderer
+	isFocused       bool
+	onSelection     func(Item) tea.Cmd
 }
 
-func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, paddingTop int) (Model, error) {
+func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, paddingTop int, onSelection func(Item) tea.Cmd) (Model, error) {
 	if paddingTop <= 0 {
 		return Model{}, errors.New("padding must be greater than 0")
 	}
@@ -51,6 +55,8 @@ func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, pad
 		cursor:          0,
 		paginator:       scrollablePaginator.New(),
 		itemRenderer:    itemRenderer,
+		isFocused:       false,
+		onSelection:     onSelection,
 	}
 
 	model.SetTitle(title)
@@ -101,6 +107,42 @@ func (m Model) renderItems() string {
 	view.WriteString(strings.Repeat("\n", linesToFill))
 
 	return view.String()
+}
+
+func (m *Model) Focus() {
+	m.isFocused = true
+}
+
+func (m *Model) Blur() {
+	m.isFocused = false
+}
+
+func (m *Model) Update(msg tea.Msg) tea.Cmd {
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyDown:
+			if m.IsCursorAtTheBottom() {
+				return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
+			}
+			m.CursorDown()
+		case tea.KeyUp:
+			if m.IsCursorAtTheTop() {
+				return FocusChain.SwitchFocusCmd(FocusChain.FocusUp)
+			}
+			m.CursorUp()
+		case tea.KeyEnter:
+			if m.onSelection == nil {
+				return nil
+			}
+
+			currentSelection, _ := m.GetCurrentSelection()
+			return m.onSelection(currentSelection)
+		}
+	}
+
+	return nil
 }
 
 func (m *Model) CursorUp() {
@@ -182,6 +224,14 @@ func (m Model) GetCurrentSelection() (Item, error) {
 		return m.items[m.cursor], nil
 	}
 	return nil, errors.New("no item selected")
+}
+
+func (m Model) IsCursorAtTheTop() bool {
+	return m.cursor == 0
+}
+
+func (m Model) IsCursorAtTheBottom() bool {
+	return m.cursor == m.amountOfItems-1
 }
 
 func (m Model) VisibleItems() []Item {

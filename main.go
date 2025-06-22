@@ -86,7 +86,7 @@ func (m model) View() string {
 // this popup will have a search input that's gonna go through all of the commands
 // and dispatch the proper one once selected.
 
-// I'd also want to have a jump mechanism where by inputing jump button
+// I'd also want to have a jump mechanism where by inputting jump button
 // we go into jump state, in that state we can cancel or jump focus to something
 
 // landing page view
