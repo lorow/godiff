@@ -24,6 +24,7 @@ type Model struct {
 	title           string
 	noItemsText     string
 	styles          Styles
+	focusedStyles   Styles
 	paddingTop      int
 	width           int
 	height          int
@@ -42,10 +43,10 @@ func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, pad
 		return Model{}, errors.New("padding must be greater than 0")
 	}
 
-	styles := DefaultStyles()
 	model := Model{
 		noItemsText:     noItemsText,
-		styles:          styles,
+		styles:          DefaultStyles(),
+		focusedStyles:   FocusedStyles(),
 		paddingTop:      paddingTop,
 		amountOfItems:   len(items),
 		items:           items,
@@ -67,8 +68,8 @@ func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, pad
 
 func (m Model) View() string {
 	var sections []string
-
-	container := m.styles.Container.Width(m.width).Height(m.height)
+	styles := m.getStyles()
+	container := styles.Container.Width(m.width).Height(m.height)
 	sections = append(sections, m.title)
 
 	content := lipgloss.NewStyle().Height(m.getAvailableHeight()).Render(m.renderItems())
@@ -79,6 +80,7 @@ func (m Model) View() string {
 
 func (m Model) renderItems() string {
 	var view strings.Builder
+	styles := m.getStyles()
 	availableHeight := m.getAvailableHeight()
 	totalItemHeight := m.getItemHeight()
 
@@ -88,7 +90,7 @@ func (m Model) renderItems() string {
 	maxVisibleItems := max(0, availableHeight/totalItemHeight)
 
 	if itemsCount == 0 {
-		return m.styles.NoItems.Render(m.noItemsText)
+		return styles.NoItems.Render(m.noItemsText)
 	}
 
 	for i, item := range visibleItems[:min(itemsCount, maxVisibleItems)] {
@@ -107,6 +109,13 @@ func (m Model) renderItems() string {
 	view.WriteString(strings.Repeat("\n", linesToFill))
 
 	return view.String()
+}
+
+func (m Model) getStyles() Styles {
+	if m.isFocused {
+		return m.focusedStyles
+	}
+	return m.styles
 }
 
 func (m *Model) Focus() {
@@ -186,7 +195,8 @@ func (m *Model) SetWidth(width int) {
 }
 
 func (m *Model) SetTitle(title string) {
-	renderedTItle := m.styles.Title.Render(title)
+	styles := m.getStyles()
+	renderedTItle := styles.Title.Render(title)
 	m.title = lipgloss.JoinVertical(lipgloss.Top, renderedTItle, strings.Repeat("\n", m.paddingTop-1))
 	m.recalculateAvailableHeight()
 	m.recalculateViewBounds()

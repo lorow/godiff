@@ -17,6 +17,9 @@ type Model struct {
 	inputText []rune
 	// cursor         Cursor.Model
 	cursorPosition CursorPosition
+	defaultStyle   Styles
+	focusedStyle   Styles
+	onSubmit       func(string) tea.Cmd
 	width          int
 	isFocused      bool
 }
@@ -27,6 +30,8 @@ func New(opts ...func(*Model)) *Model {
 		// cursor:         Cursor.NewCursorModel(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
+		defaultStyle:   DefaultStyles(),
+		focusedStyle:   focusedStyles(),
 		width:          0,
 		isFocused:      false,
 	}
@@ -41,6 +46,24 @@ func New(opts ...func(*Model)) *Model {
 func WithPrompt(prompt string) func(model *Model) {
 	return func(model *Model) {
 		model.prompt = prompt
+	}
+}
+
+func WIthRegularStyles(styles Styles) func(model *Model) {
+	return func(model *Model) {
+		model.defaultStyle = styles
+	}
+}
+
+func WithFocusedStyles(styles Styles) func(model *Model) {
+	return func(model *Model) {
+		model.focusedStyle = styles
+	}
+}
+
+func WIthOnSubmit(onSubmit func(string) tea.Cmd) func(model *Model) {
+	return func(model *Model) {
+		model.onSubmit = onSubmit
 	}
 }
 
@@ -62,6 +85,10 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		switch msg.Type {
 		case tea.KeyDown:
 			return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
+		case tea.KeyEnter:
+			if m.onSubmit != nil {
+				return m.onSubmit(string(m.inputText))
+			}
 		case tea.KeyBackspace:
 			m.DeleteCharBackwards()
 		case tea.KeyLeft:
@@ -109,10 +136,6 @@ func (m Model) View() string {
 	v.WriteString(m.prompt)
 	v.WriteString(" ")
 
-	if m.isFocused {
-		v.WriteString("Focused")
-	}
-
 	if m.cursorPosition.X > inputTextLength {
 		v.WriteString(string(m.inputText))
 		// v.WriteString(m.cursor.View())
@@ -122,7 +145,10 @@ func (m Model) View() string {
 		// v.WriteString(m.cursor.View())
 		v.WriteString(string(m.inputText[offset+1:]))
 	}
-	return v.String()
+
+	style := m.getStyle()
+
+	return style.Container.Width(m.width).Render(v.String())
 }
 
 func (m *Model) DeleteCharBackwards() {
@@ -169,4 +195,11 @@ func (m *Model) Blur() {
 
 func TextInputBlink() tea.Msg {
 	return Cursor.BlinkCursor()
+}
+
+func (m Model) getStyle() Styles {
+	if m.isFocused {
+		return m.focusedStyle
+	}
+	return m.defaultStyle
 }

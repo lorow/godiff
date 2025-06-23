@@ -53,7 +53,7 @@ func (p RenderableProject) Description() string {
 }
 
 func NewLandingPage() LandingPageModel {
-	searchInput := TextInput.New()
+	searchInput := TextInput.New(TextInput.WIthOnSubmit(onSearchSubmit))
 	searchInput.Focus()
 
 	itemRender := ItemList.NewDefaultItemRenderer()
@@ -104,6 +104,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.SetNewSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		m.searchInput.SetWidth(msg.Width - 4)
 		m.itemList.SetWidth(msg.Width - 3)
 		m.itemList.SetHeight(msg.Height - 10)
 		m.shortcutsPanel.SetWidth(msg.Width)
@@ -142,18 +143,8 @@ func onItemListSelect(item ItemList.Item) tea.Cmd {
 	return Router.RouteTo("editor", SelectedProject(item.(RenderableProject).ID))
 }
 
-func (m LandingPageModel) handleSearch(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// switch msg := msg.(type) {
-	// case tea.KeyMsg:
-	// 	switch msg.String() {
-	// 	case "down":
-	// 		return m, messages.SwitchFocusCmd("project_list")
-	// 	}
-	// }
-
-	// todo handle search here
-
-	return m, nil
+func onSearchSubmit(input string) tea.Cmd {
+	return FilterProjectsCmd(input)
 }
 
 func (m LandingPageModel) View() string {
@@ -164,15 +155,12 @@ func (m LandingPageModel) View() string {
 	quitText := lipgloss.NewStyle().PaddingRight(2).Render("Press Q to quit")
 	middleSpacer := lipgloss.NewStyle().Width(m.width - lipgloss.Width(title) - lipgloss.Width(quitText)).Render("")
 	renderedTitle := lipgloss.NewStyle().PaddingTop(1).PaddingBottom(1).Render(lipgloss.JoinHorizontal(lipgloss.Top, title, middleSpacer, quitText))
-	searchInputView := m.searchInput.View()
-	//                                                     BTW with this (RoundedBorder) I can make my own border with like a title
-	inputPanelThing := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).MarginLeft(1).MarginRight(1).PaddingLeft(1).Width(m.width - 4).Render(searchInputView)
 
 	doc.WriteString(
 		lipgloss.JoinVertical(
 			lipgloss.Top,
 			renderedTitle,
-			inputPanelThing,
+			m.searchInput.View(),
 			m.itemList.View(),
 			m.shortcutsPanel.View(),
 		),
