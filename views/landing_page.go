@@ -56,8 +56,12 @@ func NewLandingPage() LandingPageModel {
 	searchInput := TextInput.New(TextInput.WIthOnSubmit(onSearchSubmit))
 	searchInput.Focus()
 
-	itemRender := ItemList.NewDefaultItemRenderer()
-	itemList, _ := ItemList.New("Projects", "No projects loaded", []ItemList.Item{}, itemRender, 1, onItemListSelect)
+	itemList := ItemList.New(
+		ItemList.WithTittle("Projects"),
+		ItemList.WithNoItemsText("No projects loaded"),
+		ItemList.WithOnSelection(onItemListSelect),
+	)
+
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
 	basicShortcuts := []ShortcutsPanel.Shortcut{
@@ -75,11 +79,11 @@ func NewLandingPage() LandingPageModel {
 		ShortcutsPanel.WithShortcuts(onProjectSelectShortcuts),
 	)
 
-	focusChain := FocusChain.New(FocusChain.WithItem(searchInput), FocusChain.WithItem(&itemList))
+	focusChain := FocusChain.New(FocusChain.WithItem(searchInput), FocusChain.WithItem(itemList))
 
 	return LandingPageModel{
 		searchInput:              searchInput,
-		itemList:                 &itemList,
+		itemList:                 itemList,
 		titlePanel:               titlePanel,
 		shortcutsPanel:           shortcutsPanel,
 		basicShortcuts:           basicShortcuts,

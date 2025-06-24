@@ -22,6 +22,7 @@ type ItemRenderer interface {
 
 type Model struct {
 	title           string
+	renderedTitle   string
 	noItemsText     string
 	styles          Styles
 	focusedStyles   Styles
@@ -38,39 +39,78 @@ type Model struct {
 	onSelection     func(Item) tea.Cmd
 }
 
-func New(title, noItemsText string, items []Item, itemRenderer ItemRenderer, paddingTop int, onSelection func(Item) tea.Cmd) (Model, error) {
-	if paddingTop <= 0 {
-		return Model{}, errors.New("padding must be greater than 0")
-	}
-
+func New(opts ...func(*Model)) *Model {
 	model := Model{
-		noItemsText:     noItemsText,
+		noItemsText:     "No items",
 		styles:          DefaultStyles(),
 		focusedStyles:   FocusedStyles(),
-		paddingTop:      paddingTop,
-		amountOfItems:   len(items),
-		items:           items,
+		paddingTop:      1,
+		amountOfItems:   0,
 		width:           0,
 		height:          0,
 		availableHeight: 0,
 		cursor:          0,
+		itemRenderer:    NewDefaultItemRenderer(),
 		paginator:       scrollablePaginator.New(),
-		itemRenderer:    itemRenderer,
 		isFocused:       false,
-		onSelection:     onSelection,
 	}
 
-	model.SetTitle(title)
-	model.SetPaddingTop(paddingTop)
+	for _, opt := range opts {
+		opt(&model)
+	}
 
-	return model, nil
+	// we need to recalculate some parts for items to line up correctly
+	model.SetTitle(model.title)
+	model.SetPaddingTop(model.paddingTop)
+
+	return &model
+}
+
+func WithItems(items []Item) func(*Model) {
+	return func(model *Model) {
+		model.SetItems(items)
+	}
+}
+
+func WithItemRenderer(itemRenderer ItemRenderer) func(*Model) {
+	return func(model *Model) {
+		model.SetItemRenderer(itemRenderer)
+	}
+}
+
+func WithOnSelection(onSelection func(Item) tea.Cmd) func(*Model) {
+	return func(model *Model) {
+		model.onSelection = onSelection
+	}
+}
+
+func WithTittle(title string) func(*Model) {
+	return func(model *Model) {
+		model.SetTitle(title)
+	}
+}
+
+func WithNoItemsText(noItemsText string) func(*Model) {
+	return func(model *Model) {
+		model.noItemsText = noItemsText
+	}
+}
+
+func WithPaddingTop(padding int) func(model *Model) {
+	if padding <= 0 {
+		padding = 1
+	}
+
+	return func(model *Model) {
+		model.SetPaddingTop(padding)
+	}
 }
 
 func (m Model) View() string {
 	var sections []string
 	styles := m.getStyles()
 	container := styles.Container.Width(m.width).Height(m.height)
-	sections = append(sections, m.title)
+	sections = append(sections, m.renderedTitle)
 
 	content := lipgloss.NewStyle().Height(m.getAvailableHeight()).Render(m.renderItems())
 	sections = append(sections, content)
@@ -196,20 +236,21 @@ func (m *Model) SetWidth(width int) {
 
 func (m *Model) SetTitle(title string) {
 	styles := m.getStyles()
+	m.title = title
 	renderedTItle := styles.Title.Render(title)
-	m.title = lipgloss.JoinVertical(lipgloss.Top, renderedTItle, strings.Repeat("\n", m.paddingTop-1))
+	m.renderedTitle = lipgloss.JoinVertical(lipgloss.Top, renderedTItle, strings.Repeat("\n", m.paddingTop-1))
 	m.recalculateAvailableHeight()
 	m.recalculateViewBounds()
 }
 
 func (m *Model) SetPaddingTop(paddingTop int) {
-	m.title = lipgloss.JoinVertical(lipgloss.Top, m.title, strings.Repeat("\n", paddingTop-1))
+	m.renderedTitle = lipgloss.JoinVertical(lipgloss.Top, m.renderedTitle, strings.Repeat("\n", paddingTop-1))
 	m.recalculateAvailableHeight()
 	m.recalculateViewBounds()
 }
 
 func (m *Model) recalculateAvailableHeight() {
-	m.availableHeight = m.height - lipgloss.Height(m.title)
+	m.availableHeight = m.height - lipgloss.Height(m.renderedTitle)
 }
 
 func (m *Model) recalculateViewBounds() {
