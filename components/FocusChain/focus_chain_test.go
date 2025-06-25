@@ -10,12 +10,14 @@ type FocusableTestItem struct {
 	isFocused bool
 }
 
-func (f *FocusableTestItem) Focus() {
+func (f *FocusableTestItem) Focus() tea.Cmd {
 	f.isFocused = true
+	return nil
 }
 
-func (f *FocusableTestItem) Blur() {
+func (f *FocusableTestItem) Blur() tea.Cmd {
 	f.isFocused = false
+	return nil
 }
 
 func (f *FocusableTestItem) Update(msg tea.Msg) tea.Cmd {
@@ -89,7 +91,7 @@ func TestMovingFocusHitEnd(t *testing.T) {
 
 	firstItem := &FocusableTestItem{isFocused: true}
 	focusChain := New(WithItem(firstItem))
-	result := focusChain.Next()
+	_, result := focusChain.Next()
 
 	if result == nil {
 		t.Errorf("Expected result to indicated the end of focus chain, but got %v", result)
@@ -101,7 +103,7 @@ func TestMovingFocusHitEnd(t *testing.T) {
 		t.Errorf("Expected result to indicated the end of focus chain, but got %v", result)
 	}
 
-	result = focusChain.Previous()
+	_, result = focusChain.Previous()
 
 	if result == nil {
 		t.Errorf("Expected result to indicated the end of focus chain, but got %v", result)
