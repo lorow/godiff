@@ -158,12 +158,14 @@ func (m Model) getStyles() Styles {
 	return m.styles
 }
 
-func (m *Model) Focus() {
+func (m *Model) Focus() tea.Cmd {
 	m.isFocused = true
+	return nil
 }
 
-func (m *Model) Blur() {
+func (m *Model) Blur() tea.Cmd {
 	m.isFocused = false
+	return nil
 }
 
 func (m *Model) Update(msg tea.Msg) tea.Cmd {

@@ -13,9 +13,9 @@ type CursorPosition struct {
 }
 
 type Model struct {
-	prompt    string
-	inputText []rune
-	// cursor         Cursor.Model
+	prompt         string
+	inputText      []rune
+	cursor         Cursor.Model
 	cursorPosition CursorPosition
 	defaultStyle   Styles
 	focusedStyle   Styles
@@ -26,8 +26,8 @@ type Model struct {
 
 func New(opts ...func(*Model)) *Model {
 	model := &Model{
-		prompt: ">",
-		// cursor:         Cursor.NewCursorModel(),
+		prompt:         ">",
+		cursor:         Cursor.New(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
 		defaultStyle:   DefaultStyles(),
@@ -41,6 +41,10 @@ func New(opts ...func(*Model)) *Model {
 	}
 
 	return model
+}
+
+func (m *Model) Init() tea.Cmd {
+	return Cursor.Blink
 }
 
 func WithPrompt(prompt string) func(model *Model) {
@@ -69,17 +73,6 @@ func WIthOnSubmit(onSubmit func(string) tea.Cmd) func(model *Model) {
 
 func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	// todo add keymaps
-
-	// check if we should initialize blinking
-	// if initMsg, ok := msg.(Cursor.InitCursorBlinkMsg); ok {
-	// 	var cmd tea.Cmds
-	// 	// rethink cursor blinking
-	// 	// m.cursor.Focus()
-	// 	// m.cursor, cmd = m.cursor.Update(initMsg)
-	// 	// m.cursor.Blur()
-	// 	return cmd
-	// }
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -106,18 +99,13 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 		}
 	}
 
-	// var cmds []tea.Cmd
-	// var cmd tea.Cmd
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
 
-	// m.cursor, cmd = m.cursor.Update(msg)
-	// cmds = append(cmds, cmd)
+	m.cursor, cmd = m.cursor.Update(msg)
+	cmds = append(cmds, cmd)
 
-	// if m.cursor.Mode() == Cursor.CursorBlink {
-	// 	cmds = append(cmds, m.cursor.BlinkCmd())
-	// }
-
-	// return tea.Batch(cmds...)
-	return nil
+	return tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
@@ -128,9 +116,9 @@ func (m Model) View() string {
 	// so we should grab the char under it
 	// and display it as cursor
 	if m.cursorPosition.X <= inputTextLength {
-		// m.cursor.SetChar(string(m.inputText[m.cursorPosition.X-1]))
+		m.cursor.SetChar(string(m.inputText[m.cursorPosition.X-1]))
 	} else {
-		// m.cursor.SetChar("█")
+		m.cursor.SetChar("█")
 	}
 
 	v.WriteString(m.prompt)
@@ -138,11 +126,11 @@ func (m Model) View() string {
 
 	if m.cursorPosition.X > inputTextLength {
 		v.WriteString(string(m.inputText))
-		// v.WriteString(m.cursor.View())
+		v.WriteString(m.cursor.View())
 	} else {
 		offset := max(0, m.cursorPosition.X-1)
 		v.WriteString(string(m.inputText[:offset]))
-		// v.WriteString(m.cursor.View())
+		v.WriteString(m.cursor.View())
 		v.WriteString(string(m.inputText[offset+1:]))
 	}
 
@@ -183,18 +171,16 @@ func (m *Model) Reset() {
 	m.inputText = make([]rune, 0)
 }
 
-func (m *Model) Focus() {
-	// m.cursor.Focus()
+func (m *Model) Focus() tea.Cmd {
+	cmd := m.cursor.Focus()
 	m.isFocused = true
+	return cmd
 }
 
-func (m *Model) Blur() {
-	// m.cursor.Blur()
+func (m *Model) Blur() tea.Cmd {
+	m.cursor.Blur()
 	m.isFocused = false
-}
-
-func TextInputBlink() tea.Msg {
-	return Cursor.BlinkCursor()
+	return nil
 }
 
 func (m Model) getStyle() Styles {

@@ -65,12 +65,16 @@ func NewLandingPage() LandingPageModel {
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
 	basicShortcuts := []ShortcutsPanel.Shortcut{
+		{Key: "↑/↓", Description: "Change focus"},
 		{Key: "^Q", Description: "Quit"},
+		{Key: "^N", Description: "Create new project"},
 		{Key: "^O", Description: "Jump focus"},
 	}
 
 	onProjectSelectShortcuts := []ShortcutsPanel.Shortcut{
+		{Key: "↑/↓", Description: "Change focus"},
 		{Key: "^Q", Description: "Quit"},
+		{Key: "^N", Description: "Create new project"},
 		{Key: "Enter", Description: "Launch project"},
 		{Key: "^O", Description: "Jump focus"},
 	}
@@ -93,17 +97,21 @@ func NewLandingPage() LandingPageModel {
 }
 
 func (m LandingPageModel) Init() tea.Cmd {
+	var cmds []tea.Cmd
+
 	if m.state == Initial {
 		m.state = LoadingProjects
-		return LoadProjectsCmd(10, 0)
+		cmds = append(cmds, LoadProjectsCmd(10, 0))
 	}
 
-	return nil
+	cmds = append(cmds, m.searchInput.Init())
+	return tea.Batch(cmds...)
 }
 
 func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// we need to first handle the incoming messages
 	// only then we can send our own IO commands
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case messages.SetNewSizeMsg:
 		m.width = msg.Width
@@ -121,11 +129,13 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case FocusChain.SwitchFocusMsg:
 		if msg.Direction == FocusChain.FocusUp {
-			m.focusChain.Previous()
+			cmd, _ := m.focusChain.Previous()
+			cmds = append(cmds, cmd)
 		}
 
 		if msg.Direction == FocusChain.FocusDown {
-			m.focusChain.Next()
+			cmd, _ := m.focusChain.Next()
+			cmds = append(cmds, cmd)
 		}
 	}
 
@@ -139,8 +149,8 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.shortcutsPanel.SetShortcuts(m.onProjectSelectShortcuts)
 	}
 
-	result := currentlySelected.Update(msg)
-	return m, result
+	cmds = append(cmds, currentlySelected.Update(msg))
+	return m, tea.Batch(cmds...)
 }
 
 func onItemListSelect(item ItemList.Item) tea.Cmd {

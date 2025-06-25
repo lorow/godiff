@@ -2,7 +2,6 @@ package Cursor
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,26 +10,29 @@ import (
 
 var lastId = 0
 
+type CursorBlinkMsg int
+
 type CursorMode int
-
-type InitCursorBlinkMsg struct{}
-
-type CursorBlinkMsg struct {
-	id int
-}
-
-type blinkCanceled struct{}
-
-type cursorBlinkCtx struct {
-	ctx    context.Context
-	cancel context.CancelFunc
-}
 
 const (
 	CursorBlink CursorMode = iota
 	CursorStatic
 	CursorHide
 )
+
+type initialBlinkMsg struct{}
+
+type BlinkMsg struct {
+	id     int
+	tag_id int
+}
+
+type blinkCanceled struct{}
+
+type blinkCtx struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+}
 
 type Model struct {
 	cursorStyle lipgloss.Style
@@ -39,18 +41,19 @@ type Model struct {
 	blinkSpeed  time.Duration
 	char        string
 	id          int
+	tag_id      int
 	focus       bool
 	blink       bool
-	blinkCtx    *cursorBlinkCtx
+	blinkCtx    *blinkCtx
 }
 
-func NewCursorModel() Model {
+func New() Model {
 	cursorModel := Model{
-		id:         lastId,
-		mode:       CursorBlink,
 		blinkSpeed: time.Millisecond * 500,
+		mode:       CursorBlink,
 		blink:      true,
-		blinkCtx: &cursorBlinkCtx{
+		id:         lastId,
+		blinkCtx: &blinkCtx{
 			ctx: context.Background(),
 		},
 	}
@@ -61,33 +64,31 @@ func NewCursorModel() Model {
 }
 
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
+
 	switch msg := msg.(type) {
-	case InitCursorBlinkMsg:
+	case initialBlinkMsg:
 		if m.mode != CursorBlink || !m.focus {
 			return m, nil
 		}
 
-		cmd := m.BlinkCmd()
-		return m, cmd
+		return m, m.BlinkCursorCmd()
 
-	case CursorBlinkMsg:
-		// we only want to blink for the current cursor
-		if msg.id != m.id {
-			return m, nil
-		}
-
+	case BlinkMsg:
 		if m.mode != CursorBlink || !m.focus {
 			return m, nil
 		}
 
+		if msg.id != m.id || msg.tag_id != m.tag_id {
+			return m, nil
+		}
+
+		var cmd tea.Cmd
 		if m.mode == CursorBlink {
 			m.blink = !m.blink
-			return m, m.BlinkCmd()
+			cmd = m.BlinkCursorCmd()
 		}
-		return m, nil
 
-	case blinkCanceled:
-		return m, nil
+		return m, cmd
 	}
 
 	return m, nil
@@ -109,7 +110,7 @@ func (m *Model) SetMode(mode CursorMode) tea.Cmd {
 	m.blink = m.mode == CursorHide || !m.focus
 
 	if mode == CursorBlink {
-		return BlinkCursor
+		return m.BlinkCursorCmd()
 	}
 
 	return nil
@@ -119,28 +120,31 @@ func (m Model) Mode() CursorMode {
 	return m.mode
 }
 
-func (m *Model) TurnBlinkOff() {
-	m.blink = false
-}
-
 func (m *Model) SetChar(char string) {
 	m.char = char
 }
 
-func (m *Model) Focus() {
+func (m *Model) Focus() tea.Cmd {
 	m.focus = true
+	m.blink = m.mode != CursorHide
+
+	if m.mode == CursorBlink {
+		return m.BlinkCursorCmd()
+	}
+
+	return nil
 }
 
 func (m *Model) Blur() {
 	m.focus = false
+	m.blink = false
 }
 
-func BlinkCursor() tea.Msg {
-	return InitCursorBlinkMsg{}
+func (m *Model) IsFocused() bool {
+	return m.focus
 }
 
-// todo refactor this to use tea commands instead of channels
-func (m *Model) BlinkCmd() tea.Cmd {
+func (m *Model) BlinkCursorCmd() tea.Cmd {
 	if m.mode != CursorBlink {
 		return nil
 	}
@@ -152,18 +156,22 @@ func (m *Model) BlinkCmd() tea.Cmd {
 	ctx, cancel := context.WithTimeout(m.blinkCtx.ctx, m.blinkSpeed)
 	m.blinkCtx.cancel = cancel
 
+	m.tag_id++
+	blinkMsg := BlinkMsg{id: m.id, tag_id: m.tag_id}
+
 	return func() tea.Msg {
 		defer cancel()
-
 		<-ctx.Done()
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			return CursorBlinkMsg{
-				id: m.id,
-			}
+		if ctx.Err() == context.DeadlineExceeded {
+			return blinkMsg
 		}
-		// since we're still waiting
-		// for the next blink step to happen
-		// we can send a noop
+
 		return blinkCanceled{}
 	}
+}
+
+// Initialize blinking, this is accepted by any and all cursors, regardless of their focus.
+// if the current view is no receiving input currently, you may need to refire the command
+func Blink() tea.Msg {
+	return initialBlinkMsg{}
 }

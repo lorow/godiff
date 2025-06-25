@@ -3,8 +3,8 @@ package FocusChain
 import tea "github.com/charmbracelet/bubbletea"
 
 type Focusable interface {
-	Focus()
-	Blur()
+	Focus() tea.Cmd
+	Blur() tea.Cmd
 	Update(msg tea.Msg) tea.Cmd
 }
 
@@ -35,39 +35,41 @@ func (chain *Model) GetCurrentlySelected() Focusable {
 	return chain.chain[chain.index]
 }
 
-func (chain *Model) Next() *ReachedFocusChainEnd {
+func (chain *Model) Next() (tea.Cmd, *ReachedFocusChainEnd) {
 
 	if len(chain.chain) == 0 {
-		return &ReachedFocusChainEnd{}
+		return nil, &ReachedFocusChainEnd{}
 	}
 
 	if chain.index < len(chain.chain)-1 {
-		chain.chain[chain.index].Blur()
+		cmds := []tea.Cmd{}
+		cmds = append(cmds, chain.chain[chain.index].Blur())
 		chain.index++
-		chain.chain[chain.index].Focus()
-		return nil
+		cmds = append(cmds, chain.chain[chain.index].Focus())
+		return tea.Batch(cmds...), nil
 	}
 
-	return &ReachedFocusChainEnd{}
+	return nil, &ReachedFocusChainEnd{}
 }
 
-func (chain *Model) Previous() *ReachedFocusChainEnd {
+func (chain *Model) Previous() (tea.Cmd, *ReachedFocusChainEnd) {
 
 	if len(chain.chain) == 0 {
-		return &ReachedFocusChainEnd{}
+		return nil, &ReachedFocusChainEnd{}
 	}
 
 	if chain.index > 0 {
-		chain.chain[chain.index].Blur()
+		cmds := []tea.Cmd{}
+		cmds = append(cmds, chain.chain[chain.index].Blur())
 		chain.index--
-		chain.chain[chain.index].Focus()
-		return nil
+		cmds = append(cmds, chain.chain[chain.index].Focus())
+		return tea.Batch(cmds...), nil
 	}
 
-	return &ReachedFocusChainEnd{}
+	return nil, &ReachedFocusChainEnd{}
 
 }
 
-func (chain *Model) JumpFocus(index string) *ReachedFocusChainEnd {
-	return nil
+func (chain *Model) JumpFocus(index string) (tea.Cmd, *ReachedFocusChainEnd) {
+	return nil, nil
 }
