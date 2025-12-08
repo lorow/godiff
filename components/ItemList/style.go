@@ -12,15 +12,13 @@ type Styles struct {
 
 func DefaultStyles() (s Styles) {
 	s.Container = lipgloss.NewStyle().
-		Background(lipgloss.Color("#282c34")).
 		BorderStyle(lipgloss.RoundedBorder()).
 		PaddingRight(2)
 
 	s.TitleBar = lipgloss.NewStyle().Padding(0, 0, 1, 2) //nolint:mnd
 
 	s.Title = lipgloss.NewStyle().
-		Background(lipgloss.Color("62")).
-		Foreground(lipgloss.Color("230")).
+		Foreground(lipgloss.Color("62")).
 		Padding(0, 1)
 
 	s.Spinner = lipgloss.NewStyle().
@@ -33,7 +31,6 @@ func DefaultStyles() (s Styles) {
 func FocusedStyles() (s Styles) {
 	s = DefaultStyles()
 	s.Container = lipgloss.NewStyle().
-		Background(lipgloss.Color("#282c34")).
 		BorderStyle(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("75")).
 		PaddingRight(2)

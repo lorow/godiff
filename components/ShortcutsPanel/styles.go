@@ -10,11 +10,10 @@ type Styles struct {
 }
 
 func DefaultStyles() (s Styles) {
-	backgroundColor := lipgloss.Color("#282C34")
-	s.Container = lipgloss.NewStyle().Background(backgroundColor)
-	s.ShortcutContainer = lipgloss.NewStyle().Background(backgroundColor).PaddingLeft(2)
-	s.ShortcutKey = lipgloss.NewStyle().Background(backgroundColor).Foreground(lipgloss.Color("#61AFEF"))
-	s.ShortcutDescription = lipgloss.NewStyle().Background(backgroundColor)
+	s.Container = lipgloss.NewStyle()
+	s.ShortcutContainer = lipgloss.NewStyle().PaddingLeft(2)
+	s.ShortcutKey = lipgloss.NewStyle().Foreground(lipgloss.Color("#61AFEF"))
+	s.ShortcutDescription = lipgloss.NewStyle()
 
 	return s
 }

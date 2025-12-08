@@ -27,19 +27,19 @@ var migrations = []string{
 	);`,
 	`CREATE TABLE IF NOT EXISTS 'Request' (
 		'id' INTEGER PRIMARY KEY AUTOINCREMENT,
-		'name' TEXT, 
-		'url' TEXT, 
-		'method' TEXT, 
+		'name' TEXT,
+		'url' TEXT,
+		'method' TEXT,
 		'headers' TEXT,
-		'body' TEXT,  
+		'body' TEXT,
 		'response' INTEGER,
 		'project_id' INTEGER,
 		FOREIGN KEY(project_id) REFERENCES Project(id)
 	);`,
 	`CREATE TABLE IF NOT EXISTS 'Editor' (
 		'id' INTEGER PRIMARY KEY AUTOINCREMENT,
-		'name' TEXT, 
-		'content' TEXT, 
+		'name' TEXT,
+		'content' TEXT,
 		'project_id' INTEGER,
 		FOREIGN KEY(project_id) REFERENCES Project(id)
 	);`,

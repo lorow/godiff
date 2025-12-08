@@ -125,7 +125,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case LoadedProjectsMsg:
 		m.state = LoadedProjects
 		m.itemList.SetItems([]ItemList.Item(msg.projects))
-		m.itemList.SetTitle(fmt.Sprintf("Projects - %d", m.itemList.GetItemsCount()))
+		m.itemList.SetTitle(fmt.Sprintf("%d Projects loaded - choose a project to work or create a new one", m.itemList.GetItemsCount()))
 
 	case FocusChain.SwitchFocusMsg:
 		if msg.Direction == FocusChain.FocusUp {

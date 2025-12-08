@@ -69,13 +69,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	appDocument := docStyle.Background(BackgroundColor)
 	doc := strings.Builder{}
-
 	currentView := m.router.GetCurrentVIew()
 	doc.WriteString(currentView.View())
 
-	return appDocument.Render(doc.String())
+	return doc.String()
 }
 
 // change of plans.
@@ -90,16 +88,20 @@ func (m model) View() string {
 // we go into jump state, in that state we can cancel or jump focus to something
 
 // landing page view
+// progress on that part:
+// - UI mostly done - need to rethink styles
+// - I need to handle the filtering command
+// - I need to handle shortcut inputs
 //|--------------------------------------------------------------------------------------------------------------------|
 //|  GoDiff - 1.0.0                                                                                                    |
 //|                                                                                                                    |
 //|   | Search for a project                                                                                       |   |
 //|                                                                                                                    |
 //|   - Projects - 2 -----------------------------------------------------------------------------------------------   |
-//|   |                                  				                                                    	             |   |
+//|   |                                  				                                                    	     |   |
 //|   |  Project name                                 	                                                    	     |   |
 //|   |    Short project description                   	                                                    	     |   |
-//|   |                                  				                                                    	             |   |
+//|   |                                  				                                                             |   |
 //|   |  Project name                                 	                                                    	     |   |
 //|   |    Short project description                   	                                                    	     |   |
 //|   |                                  				                                                    	             |   |
