@@ -1,9 +1,10 @@
 package TextInput
 
 import (
+	"strings"
+
 	"godiff/components/Cursor"
 	"godiff/components/FocusChain"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -75,6 +76,12 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	// todo add keymaps
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+
+		// windows terminal quirk. When pressing ctrl by itself, it will send us an NUL rune
+		if len(msg.Runes) > 0 && msg.Runes[0] == 0 {
+			return nil
+		}
+
 		switch msg.Type {
 		case tea.KeyDown:
 			return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
