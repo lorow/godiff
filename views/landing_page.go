@@ -2,6 +2,8 @@ package views
 
 import (
 	"fmt"
+	"strings"
+
 	"godiff/components/FocusChain"
 	"godiff/components/ItemList"
 	"godiff/components/Router"
@@ -10,7 +12,6 @@ import (
 	"godiff/components/TitlePanel"
 	"godiff/db"
 	"godiff/messages"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -116,7 +117,7 @@ func (m LandingPageModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case messages.SetNewSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.searchInput.SetWidth(msg.Width - 4)
+		m.searchInput.SetWidth(msg.Width - 3)
 		m.itemList.SetWidth(msg.Width - 3)
 		m.itemList.SetHeight(msg.Height - 10)
 		m.shortcutsPanel.SetWidth(msg.Width)
