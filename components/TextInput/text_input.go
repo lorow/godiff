@@ -16,6 +16,7 @@ type CursorPosition struct {
 type Model struct {
 	prompt         string
 	inputText      []rune
+	sanitizer      *Sanitizer
 	cursor         Cursor.Model
 	cursorPosition CursorPosition
 	defaultStyle   Styles
@@ -29,6 +30,7 @@ func New(opts ...func(*Model)) *Model {
 	model := &Model{
 		prompt:         ">",
 		cursor:         Cursor.New(),
+		sanitizer:      NewSanitizer(),
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
 		defaultStyle:   DefaultStyles(),
@@ -76,12 +78,6 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	// todo add keymaps
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-
-		// windows terminal quirk. When pressing ctrl by itself, it will send us an NUL rune
-		if len(msg.Runes) > 0 && msg.Runes[0] == 0 {
-			return nil
-		}
-
 		switch msg.Type {
 		case tea.KeyDown:
 			return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
@@ -161,11 +157,12 @@ func (m *Model) insertRuneFromUserInput(values []rune) {
 	head := m.inputText[:m.cursorPosition.X-1]
 	tail := m.inputText[m.cursorPosition.X-1:]
 
-	for _, value := range values {
+	sanitized_runes := m.sanitizer.Sanitize(values)
+	for _, value := range sanitized_runes {
 		head = append(head, value)
 	}
 
-	m.cursorPosition.X = m.cursorPosition.X + len(values)
+	m.cursorPosition.X = m.cursorPosition.X + len(sanitized_runes)
 	m.inputText = append(head, tail...)
 }
 
