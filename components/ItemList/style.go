@@ -24,7 +24,7 @@ func DefaultStyles() (s Styles) {
 	s.Spinner = lipgloss.NewStyle().
 		Foreground(lipgloss.AdaptiveColor{Light: "#8E8E8E", Dark: "#747373"})
 
-	s.NoItems = lipgloss.NewStyle().PaddingTop(1).Foreground(lipgloss.Color("#747373"))
+	s.NoItems = lipgloss.NewStyle().Padding(0, 1).Foreground(lipgloss.Color("#747373"))
 	return s
 }
 

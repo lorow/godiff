@@ -1,15 +1,38 @@
 package ShortcutsPanel
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
 
 type Shortcut struct {
-	Key         string
-	Description string
+	Key          string
+	Description  string
+	comboToCheck string
+	command      tea.Cmd
 }
+
 type Model struct {
 	width     int
 	styles    Styles
 	shortcuts []Shortcut
+}
+
+func NewShortcut(key, comboToCheck, description string, command tea.Cmd) Shortcut {
+	return Shortcut{
+		Key:          key,
+		Description:  description,
+		comboToCheck: comboToCheck,
+		command:      command,
+	}
+}
+
+func (s *Shortcut) HasComboHit(combo string) bool {
+	return s.comboToCheck == combo
+}
+
+func (s *Shortcut) GetCommand() tea.Cmd {
+	return s.command
 }
 
 func New(ops ...func(*Model)) *Model {
@@ -68,4 +91,21 @@ func (m Model) View() string {
 
 func (m *Model) SetShortcuts(shortcuts []Shortcut) {
 	m.shortcuts = shortcuts
+}
+
+func (m *Model) GetActiveShortcuts() []Shortcut {
+	return m.shortcuts
+}
+
+func (m *Model) CheckIfShortcutHit(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		for _, shortcut := range m.GetActiveShortcuts() {
+			if shortcut.HasComboHit(msg.String()) {
+				return shortcut.GetCommand()
+			}
+		}
+	}
+
+	return nil
 }

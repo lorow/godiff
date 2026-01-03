@@ -189,7 +189,10 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 			}
 
 			currentSelection, _ := m.GetCurrentSelection()
-			return m.onSelection(currentSelection)
+			if currentSelection != nil {
+				return m.onSelection(currentSelection)
+			}
+			return nil
 		}
 	}
 
@@ -273,7 +276,7 @@ func (m Model) GetItemsCount() int {
 }
 
 func (m Model) GetCurrentSelection() (Item, error) {
-	if m.cursor >= 0 {
+	if m.cursor >= 0 && m.amountOfItems > 0 {
 		return m.items[m.cursor], nil
 	}
 	return nil, errors.New("no item selected")
@@ -284,7 +287,7 @@ func (m Model) IsCursorAtTheTop() bool {
 }
 
 func (m Model) IsCursorAtTheBottom() bool {
-	return m.cursor == m.amountOfItems-1
+	return m.cursor <= m.amountOfItems-1
 }
 
 func (m Model) VisibleItems() []Item {
