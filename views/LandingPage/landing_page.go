@@ -54,7 +54,7 @@ func (p RenderableProject) Description() string {
 	return "Dummy description"
 }
 
-func NewLandingPage() LandingPageModel {
+func New() LandingPageModel {
 	searchInput := TextInput.New(TextInput.WIthOnSubmit(onSearchSubmit))
 	searchInput.Focus()
 
@@ -67,18 +67,18 @@ func NewLandingPage() LandingPageModel {
 	titlePanel := TitlePanel.New(TitlePanel.WithTitle("Welcome to GoDiff - 1.0.0"))
 
 	basicShortcuts := []ShortcutsPanel.Shortcut{
-		ShortcutsPanel.NewShortcut("↑/↓", "", "Change focus", nil), // display only
-		ShortcutsPanel.NewShortcut("^Q", "ctrl+q", "Quit", Shared.ExitCmd()),
-		ShortcutsPanel.NewShortcut("^N", "ctrl+n", "Create new project", nil),
-		ShortcutsPanel.NewShortcut("^O", "ctrl+o", "Jump focus", Shared.JumpFocusCmd()),
+		ShortcutsPanel.NewShortcut("↑/↓", Shared.NoopShortcut, "Change focus", nil), // display only
+		ShortcutsPanel.NewShortcut("^Q", Shared.ExitShortcut, "Quit", Shared.ExitCmd()),
+		ShortcutsPanel.NewShortcut("^N", Shared.NewProjectShortcut, "Create new project", Router.RouteTo("new_project", nil)),
+		ShortcutsPanel.NewShortcut("^O", Shared.JumpFocusShortcut, "Jump focus", Shared.JumpFocusCmd()),
 	}
 
 	onProjectSelectShortcuts := []ShortcutsPanel.Shortcut{
-		ShortcutsPanel.NewShortcut("↑/↓", "", "Change focus", nil), // display only
-		ShortcutsPanel.NewShortcut("^Q", "ctrl+q", "Quit", Shared.ExitCmd()),
-		ShortcutsPanel.NewShortcut("^N", "ctrl+n", "Create new project", nil),
-		ShortcutsPanel.NewShortcut("Enter", "", "Launch selected project", nil), // display only
-		ShortcutsPanel.NewShortcut("^O", "ctrl+o", "Jump focus", Shared.JumpFocusCmd()),
+		ShortcutsPanel.NewShortcut("↑/↓", Shared.NoopShortcut, "Change focus", nil), // display only
+		ShortcutsPanel.NewShortcut("^Q", Shared.ExitShortcut, "Quit", Shared.ExitCmd()),
+		ShortcutsPanel.NewShortcut("^N", Shared.NewProjectShortcut, "Create new project", Router.RouteTo("new_project", nil)),
+		ShortcutsPanel.NewShortcut("Enter", Shared.NoopShortcut, "Launch selected project", nil), // display only
+		ShortcutsPanel.NewShortcut("^O", Shared.JumpFocusShortcut, "Jump focus", Shared.JumpFocusCmd()),
 	}
 
 	shortcutsPanel := ShortcutsPanel.New(

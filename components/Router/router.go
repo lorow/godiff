@@ -1,18 +1,21 @@
 package Router
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/log"
+)
 
-type additionalData interface{}
+type UpdateMessage tea.Msg
 
 type RouteMsg struct {
-	route string
-	data  additionalData
+	route      string
+	updMessage UpdateMessage
 }
 
-func RouteTo(route string, additionalData additionalData) tea.Cmd {
+func RouteTo(route string, updateMessage UpdateMessage) tea.Cmd {
 	return func() tea.Msg {
 		return RouteMsg{
-			route, additionalData,
+			route, updateMessage,
 		}
 	}
 }
@@ -33,12 +36,6 @@ func New(options ...func(*Model)) *Model {
 	}
 
 	return router
-}
-
-func WithStartingPage(view tea.Model) func(*Model) {
-	return func(r *Model) {
-		r.views["/"] = view
-	}
 }
 
 func WithRegisterRoute(route string, view tea.Model) func(*Model) {
@@ -64,6 +61,17 @@ func (r *Model) UpdateRoute(route string, view tea.Model) {
 	r.views[route] = view
 }
 
-func (r *Model) HandleRouteTo(msg tea.Msg) {
-	// todo add handling of route to message
+func (r *Model) HandleRouteTo(msg RouteMsg) tea.Cmd {
+	if _, ok := r.views[msg.route]; ok {
+		log.Debug("Routing to", "route", msg.route, "update msg", msg.updMessage)
+		r.currentRoute = msg.route
+		view := r.GetCurrentVIew()
+		view, cmd := view.Update(msg.updMessage)
+		r.UpdateRoute(msg.route, view)
+
+		return cmd
+	}
+
+	log.Debug("Route not found:", "route", msg.route)
+	return nil
 }

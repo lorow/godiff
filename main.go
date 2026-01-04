@@ -6,6 +6,7 @@ import (
 	"godiff/db"
 	"godiff/messages"
 	"godiff/views/LandingPage"
+	"godiff/views/NewProjectWizard"
 	"godiff/views/Shared"
 	"os"
 	"strings"
@@ -21,7 +22,8 @@ type model struct {
 
 func newInitialModel() model {
 	view_router := Router.New(
-		Router.WithStartingPage(LandingPage.NewLandingPage()),
+		Router.WithRegisterRoute("/", LandingPage.New()),
+		Router.WithRegisterRoute("new_project", NewProjectWizard.New()),
 	)
 
 	return model{
@@ -49,6 +51,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.router.UpdateRoute(key, viewModel)
 		}
 		return m, nil
+	case Router.RouteMsg:
+		return m, m.router.HandleRouteTo(msg)
 	case Shared.ExitMsg:
 		// placeholder for getting exit confirmation popup later on
 		return m, tea.Quit
@@ -101,6 +105,21 @@ func (m model) View() string {
 //|   --------------------------------------------------------------------------------------------------------------   |
 //|                                                                                                                    |
 //| up/down select project ^n new project ^o commands enter - load                                                     |
+//|--------------------------------------------------------------------------------------------------------------------|
+
+// new project wizard - will be used to only setup a new project
+//|--------------------------------------------------------------------------------------------------------------------|
+//|  GoDiff - 1.0.0                                                                                                    |
+//|                                                                                                                    |
+//|   | New Project Title                                                                                          |   |
+//|                                                                                                                    |
+//|   - Description  -----------------------------------------------------------------------------------------------   |
+//|   |                                  				                                                    	             |   |
+//|   |                                                                                                            |   |
+//|   |                                  				                                                                   |   |
+//|   --------------------------------------------------------------------------------------------------------------   |
+//|                                                                                         | cancel |  | continue |   |
+//| up/down change field esc go back                                                                                   |
 //|--------------------------------------------------------------------------------------------------------------------|
 
 // project page view - single editor
@@ -162,12 +181,20 @@ func (m model) View() string {
 //|--------------------------------------------------------------------------------------------------------------------|
 
 func main() {
-	f, err := tea.LogToFile("debug.log", "debug")
+	f, err := os.OpenFile("debug.log", os.O_TRUNC|os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+
 	if err != nil {
 		fmt.Println("fatal:", err)
 		os.Exit(1)
 	}
+
+	log.SetOutput(f)
+	log.SetPrefix("debug")
 	defer f.Close()
+
+	// reset the log file after every start, just so we don't accidentally put hundreds of GBs of logs while developing
+	f.Truncate(0)
+	f.Seek(0, 0)
 
 	log.SetReportCaller(true)
 	log.SetReportTimestamp(true)

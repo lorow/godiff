@@ -79,6 +79,8 @@ func (m *Model) Update(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
+		case tea.KeyUp:
+			return FocusChain.SwitchFocusCmd(FocusChain.FocusUp)
 		case tea.KeyDown:
 			return FocusChain.SwitchFocusCmd(FocusChain.FocusDown)
 		case tea.KeyEnter:
