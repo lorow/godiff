@@ -1,4 +1,4 @@
-package views
+package landingPage
 
 import tea "github.com/charmbracelet/bubbletea"
 

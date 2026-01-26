@@ -2,8 +2,8 @@ package ItemList
 
 import (
 	"errors"
-	"godiff/components/FocusChain"
-	"godiff/components/scrollablePaginator"
+	"godiff/pkg/components/FocusChain"
+	"godiff/pkg/components/scrollablePaginator"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"

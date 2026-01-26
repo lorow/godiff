@@ -27,3 +27,9 @@ func ExitCmd() tea.Cmd {
 		return ExitMsg{}
 	}
 }
+
+func RouteTo(screen Screen, payload any) tea.Cmd {
+	return func() tea.Msg {
+		return RouteMsg{To: screen, Payload: payload}
+	}
+}

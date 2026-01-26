@@ -3,8 +3,8 @@ package TextInput
 import (
 	"strings"
 
-	"godiff/components/Cursor"
-	"godiff/components/FocusChain"
+	"godiff/pkg/components/Cursor"
+	"godiff/pkg/components/FocusChain"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
