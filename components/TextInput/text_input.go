@@ -34,7 +34,7 @@ func New(opts ...func(*Model)) *Model {
 		inputText:      make([]rune, 0),
 		cursorPosition: CursorPosition{X: 1},
 		defaultStyle:   DefaultStyles(),
-		focusedStyle:   focusedStyles(),
+		focusedStyle:   FocusedStyles(),
 		width:          0,
 		isFocused:      false,
 	}

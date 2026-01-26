@@ -7,11 +7,11 @@ type Styles struct {
 }
 
 func DefaultStyles() (s Styles) {
-	s.Container = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).PaddingLeft(1)
+	s.Container = lipgloss.NewStyle().PaddingLeft(1)
 	return s
 }
 
-func focusedStyles() (s Styles) {
-	s.Container = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("62")).PaddingLeft(1)
+func FocusedStyles() (s Styles) {
+	s.Container = lipgloss.NewStyle().BorderForeground(lipgloss.Color("62")).PaddingLeft(1)
 	return s
 }
